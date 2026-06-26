@@ -108,31 +108,33 @@ function HomeView({
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   return (
-    <div className="space-y-6 px-5 pt-12">
+    <div className="space-y-10 px-6 pt-16">
       <header>
         <p className="text-sm text-muted-foreground">{greet}, Sarah</p>
-        <h1 className="text-3xl font-semibold tracking-tight">What's on the list?</h1>
+        <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-tight">
+          What's on the list?
+        </h1>
       </header>
 
       <button
         onClick={onOpenDeals}
-        className="flex w-full items-center justify-between rounded-3xl bg-deal-soft p-5 text-left shadow-card transition active:scale-[0.99]"
+        className="flex w-full items-center justify-between rounded-3xl bg-deal-soft px-6 py-7 text-left transition active:scale-[0.99]"
       >
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-deal">Today</p>
-          <p className="mt-1 text-2xl font-semibold text-foreground">
+          <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-deal">Today</p>
+          <p className="mt-2 text-[26px] font-semibold leading-tight text-foreground">
             {dealsCount} {dealsCount === 1 ? "item" : "items"} on offer
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">Tap to see all deals</p>
+          <p className="mt-1.5 text-sm text-muted-foreground">Tap to see all deals</p>
         </div>
-        <Flame className="h-8 w-8 text-deal" />
+        <Flame className="h-7 w-7 text-deal" />
       </button>
 
       <section>
-        <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <h2 className="mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
           Quick access
         </h2>
-        <div className="rounded-3xl bg-card shadow-card">
+        <div className="rounded-3xl bg-card">
           <RowButton
             onClick={onOpenMaster}
             left={<ListChecks className="h-5 w-5 text-primary" />}
@@ -159,14 +161,14 @@ function HomeView({
 
       {activity.length > 0 && (
         <section>
-          <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <h2 className="mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
             Recent activity
           </h2>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {activity.slice(0, 4).map((a) => (
-              <div key={a.id} className="rounded-2xl bg-card px-4 py-3 text-sm shadow-card">
+              <div key={a.id} className="rounded-2xl bg-card px-5 py-4 text-sm">
                 <p className="text-foreground">{a.text}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {formatDistanceToNow(a.at, { addSuffix: true })}
                 </p>
               </div>
@@ -177,6 +179,7 @@ function HomeView({
     </div>
   );
 }
+
 
 /* ---------- LISTS (master + store) ---------- */
 
@@ -194,7 +197,7 @@ function ListsView({
   if (!activeStore) {
     const visible = items.filter((i) => !i.checked);
     return (
-      <div className="px-5 pt-12">
+      <div className="px-6 pt-14">
         <h1 className="text-3xl font-semibold tracking-tight">Master list</h1>
         <p className="mt-1 text-sm text-muted-foreground">{visible.length} items to buy</p>
 
@@ -203,7 +206,7 @@ function ListsView({
             <button
               key={s.id}
               onClick={() => setActiveStore(s.id)}
-              className="flex shrink-0 items-center gap-2 rounded-full bg-card px-4 py-2 text-sm font-medium shadow-card"
+              className="flex shrink-0 items-center gap-2 rounded-full bg-card px-4 py-2 text-sm font-medium"
             >
               <StoreDot color={s.color} />
               {s.name}
@@ -211,7 +214,7 @@ function ListsView({
           ))}
         </div>
 
-        <div className="mt-4 space-y-2 pb-4">
+        <div className="mt-4 space-y-1.5 pb-6">
           {visible.length === 0 && <EmptyState text="Your list is empty. Tap + to add." />}
           {visible.map((it) => (
             <ItemRow key={it.id} item={it} viewingStore={null} onEditDeal={onEditDeal} />
@@ -225,7 +228,7 @@ function ListsView({
   const { preferredHere, anyStore, canBuyHere } = itemsForStore(items, activeStore);
 
   return (
-    <div className="px-5 pt-12">
+    <div className="px-6 pt-14">
       <button
         onClick={() => setActiveStore(null)}
         className="mb-3 flex items-center gap-1 text-sm text-muted-foreground"
@@ -265,7 +268,7 @@ function Section({
   if (items.length === 0) return null;
   return (
     <section className="mt-6">
-      <h2 className={`mb-2 px-1 text-xs font-semibold uppercase tracking-wider ${muted ? "text-muted-foreground" : "text-foreground"}`}>
+      <h2 className={`mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] ${muted ? "text-muted-foreground" : "text-foreground"}`}>
         {title}
       </h2>
       <div className="space-y-2">
@@ -284,13 +287,13 @@ function FavoritesView() {
   const favs = items.filter((i) => i.favorite);
   const quickAdd = useShop((s) => s.quickAddFromFavorite);
   return (
-    <div className="px-5 pt-12">
+    <div className="px-6 pt-14">
       <h1 className="text-3xl font-semibold tracking-tight">Favourites</h1>
       <p className="mt-1 text-sm text-muted-foreground">Tap to add back to your list</p>
-      <div className="mt-5 space-y-2 pb-4">
+      <div className="mt-6 space-y-1.5 pb-6">
         {favs.length === 0 && <EmptyState text="Star items to save them here." />}
         {favs.map((it) => (
-          <div key={it.id} className="flex items-center justify-between rounded-2xl bg-card px-4 py-3 shadow-card">
+          <div key={it.id} className="flex items-center justify-between rounded-2xl bg-card px-4 py-3">
             <div className="flex items-center gap-3">
               <Star className="h-4 w-4 fill-favorite text-favorite" />
               <div>
@@ -335,14 +338,14 @@ function DealsView({ onOpenStore }: { onOpenStore: (s: Exclude<StoreId, "any">) 
   const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
 
   return (
-    <div className="px-5 pt-12">
+    <div className="px-6 pt-14">
       <h1 className="text-3xl font-semibold tracking-tight">Deals</h1>
       <p className="mt-1 text-sm text-muted-foreground">Active offers across your list</p>
 
       {best && (
         <button
           onClick={() => onOpenStore(best[0])}
-          className="mt-5 flex w-full items-center justify-between rounded-3xl bg-deal p-5 text-left text-deal-foreground shadow-card transition active:scale-[0.99]"
+          className="mt-5 flex w-full items-center justify-between rounded-3xl bg-deal p-5 text-left text-deal-foreground transition active:scale-[0.99]"
         >
           <div>
             <p className="text-xs font-medium uppercase tracking-wide opacity-80">Best store today</p>
@@ -353,14 +356,14 @@ function DealsView({ onOpenStore }: { onOpenStore: (s: Exclude<StoreId, "any">) 
         </button>
       )}
 
-      <div className="mt-5 space-y-2 pb-4">
+      <div className="mt-6 space-y-1.5 pb-6">
         {withDeals.length === 0 && <EmptyState text="No active deals. Add one from any item." />}
         {withDeals.map((it) => {
           const d = it.deal!;
           const days = Math.ceil((new Date(d.expiry).getTime() - Date.now()) / 86400000);
           const soon = days <= 2;
           return (
-            <div key={it.id} className="flex items-center justify-between rounded-2xl bg-card px-4 py-3 shadow-card">
+            <div key={it.id} className="flex items-center justify-between rounded-2xl bg-card px-4 py-3">
               <div className="min-w-0">
                 <p className="truncate font-medium">{it.name}</p>
                 <p className="text-xs text-muted-foreground">
@@ -390,14 +393,14 @@ function MoreView() {
   const items = useShop((s) => s.items);
   const activity = useShop((s) => s.activity);
   return (
-    <div className="px-5 pt-12">
+    <div className="px-6 pt-14">
       <h1 className="text-3xl font-semibold tracking-tight">More</h1>
-      <div className="mt-5 rounded-3xl bg-card p-5 shadow-card">
+      <div className="mt-5 rounded-3xl bg-card p-5">
         <p className="text-sm text-muted-foreground">Shared account</p>
         <p className="mt-1 font-medium">The Henderson household</p>
         <p className="mt-0.5 text-xs text-muted-foreground">Sarah, Tom · 2 devices</p>
       </div>
-      <div className="mt-3 rounded-3xl bg-card p-5 shadow-card">
+      <div className="mt-3 rounded-3xl bg-card p-5">
         <p className="text-sm text-muted-foreground">Stats</p>
         <div className="mt-2 grid grid-cols-2 gap-3">
           <Stat label="Items" value={items.length} />
@@ -416,12 +419,12 @@ function MoreView() {
 
       {activity.length > 0 && (
         <div className="mt-5">
-          <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <h2 className="mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
             Activity feed
           </h2>
-          <div className="space-y-2 pb-4">
+          <div className="space-y-1.5 pb-6">
             {activity.map((a) => (
-              <div key={a.id} className="rounded-2xl bg-card px-4 py-3 text-sm shadow-card">
+              <div key={a.id} className="rounded-2xl bg-card px-4 py-3 text-sm">
                 <p>{a.text}</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   {formatDistanceToNow(a.at, { addSuffix: true })}
@@ -465,7 +468,7 @@ function ItemRow({
 
   return (
     <div
-      className={`group flex items-center gap-3 rounded-2xl px-4 py-3 shadow-card transition ${
+      className={`group flex items-center gap-4 rounded-2xl px-4 py-4 transition ${
         dealHere ? "bg-deal-soft" : "bg-card"
       }`}
     >
@@ -480,45 +483,39 @@ function ItemRow({
           }
         }}
         aria-label="Tick off"
-        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition ${
+        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition ${
           item.checked ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background"
         }`}
       >
         {item.checked && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
       </button>
 
-      <div className="min-w-0 flex-1">
+      <button
+        onClick={() => onEditDeal(item)}
+        className="min-w-0 flex-1 text-left"
+        aria-label="Edit deal"
+      >
         <div className="flex items-center gap-1.5">
-          <p className={`truncate font-medium ${item.checked ? "text-muted-foreground line-through" : ""}`}>
+          <p className={`truncate text-[15px] font-medium ${item.checked ? "text-muted-foreground line-through" : ""}`}>
             {item.name}
           </p>
           {item.isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          {item.preferredStore !== "any" && (
-            <span className="flex items-center gap-1">
-              <Star className="h-3 w-3 fill-favorite text-favorite" />
-              {storeName(item.preferredStore)}
-            </span>
+        <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+          {item.preferredStore !== "any" ? (
+            <span>{storeName(item.preferredStore)}</span>
+          ) : (
+            <span>Any store</span>
           )}
-          {item.preferredStore === "any" && <span>Any store</span>}
           {dealElsewhere && (
-            <span className="flex items-center gap-1 text-deal">
-              <Flame className="h-3 w-3" /> Cheaper at {storeName(deal!.store)}
-            </span>
+            <span className="text-deal">· Cheaper at {storeName(deal!.store)}</span>
           )}
           {dealHere && (
-            <span className="flex items-center gap-1 font-medium text-deal">
-              <Flame className="h-3 w-3" /> On offer{deal!.price ? ` · £${deal!.price.toFixed(2)}` : ""}
-            </span>
+            <span className="font-medium text-deal">· On offer{deal!.price ? ` £${deal!.price.toFixed(2)}` : ""}</span>
           )}
-          {deal && !viewingStore && (
-            <span className="flex items-center gap-1 text-deal">
-              <Flame className="h-3 w-3" /> On offer
-            </span>
-          )}
+          {deal && !viewingStore && <span className="text-deal">· On offer</span>}
         </div>
-      </div>
+      </button>
 
       <button
         onClick={() => toggleFav(item.id)}
@@ -527,16 +524,10 @@ function ItemRow({
       >
         <Star className={`h-4 w-4 ${item.favorite ? "fill-favorite text-favorite" : ""}`} />
       </button>
-      <button
-        onClick={() => onEditDeal(item)}
-        aria-label="Add deal"
-        className="p-1 text-muted-foreground"
-      >
-        <Tag className="h-4 w-4" />
-      </button>
     </div>
   );
 }
+
 
 /* ---------- ADD ITEM SHEET ---------- */
 
@@ -759,7 +750,7 @@ function RowButton({
   sub?: string;
 }) {
   return (
-    <button onClick={onClick} className="flex w-full items-center gap-3 px-5 py-4 text-left">
+    <button onClick={onClick} className="flex w-full items-center gap-4 px-5 py-5 text-left">
       <div className="flex h-9 w-9 items-center justify-center">{left}</div>
       <div className="flex-1">
         <p className="font-medium">{title}</p>
@@ -771,7 +762,7 @@ function RowButton({
 }
 
 function Divider() {
-  return <div className="ml-[68px] h-px bg-border" />;
+  return <div className="ml-[72px] h-px bg-border/60" />;
 }
 
 function StoreDot({ color, large }: { color: string; large?: boolean }) {
@@ -785,7 +776,7 @@ function StoreDot({ color, large }: { color: string; large?: boolean }) {
 
 function EmptyState({ text }: { text: string }) {
   return (
-    <div className="rounded-3xl bg-card px-5 py-10 text-center shadow-card">
+    <div className="rounded-3xl bg-card px-5 py-10 text-center">
       <p className="text-sm text-muted-foreground">{text}</p>
     </div>
   );
@@ -802,7 +793,7 @@ function BottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
     { id: "more", label: "More", icon: MoreHorizontal },
   ];
   return (
-    <nav className="fixed bottom-0 left-1/2 z-20 w-full max-w-md -translate-x-1/2 border-t border-border bg-background/95 px-2 pb-5 pt-2 backdrop-blur">
+    <nav className="fixed bottom-0 left-1/2 z-20 w-full max-w-md -translate-x-1/2 bg-background/90 px-2 pb-5 pt-2 backdrop-blur-xl">
       <div className="flex items-center justify-around">
         {items.map((it) => {
           const active = tab === it.id;
