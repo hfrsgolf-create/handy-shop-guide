@@ -465,7 +465,7 @@ function ItemRow({
 
   return (
     <div
-      className={`group flex items-center gap-3 rounded-2xl px-4 py-3 transition ${
+      className={`group flex items-center gap-4 rounded-2xl px-4 py-4 transition ${
         dealHere ? "bg-deal-soft" : "bg-card"
       }`}
     >
@@ -480,45 +480,39 @@ function ItemRow({
           }
         }}
         aria-label="Tick off"
-        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition ${
+        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition ${
           item.checked ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background"
         }`}
       >
         {item.checked && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
       </button>
 
-      <div className="min-w-0 flex-1">
+      <button
+        onClick={() => onEditDeal(item)}
+        className="min-w-0 flex-1 text-left"
+        aria-label="Edit deal"
+      >
         <div className="flex items-center gap-1.5">
-          <p className={`truncate font-medium ${item.checked ? "text-muted-foreground line-through" : ""}`}>
+          <p className={`truncate text-[15px] font-medium ${item.checked ? "text-muted-foreground line-through" : ""}`}>
             {item.name}
           </p>
           {item.isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          {item.preferredStore !== "any" && (
-            <span className="flex items-center gap-1">
-              <Star className="h-3 w-3 fill-favorite text-favorite" />
-              {storeName(item.preferredStore)}
-            </span>
+        <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+          {item.preferredStore !== "any" ? (
+            <span>{storeName(item.preferredStore)}</span>
+          ) : (
+            <span>Any store</span>
           )}
-          {item.preferredStore === "any" && <span>Any store</span>}
           {dealElsewhere && (
-            <span className="flex items-center gap-1 text-deal">
-              <Flame className="h-3 w-3" /> Cheaper at {storeName(deal!.store)}
-            </span>
+            <span className="text-deal">· Cheaper at {storeName(deal!.store)}</span>
           )}
           {dealHere && (
-            <span className="flex items-center gap-1 font-medium text-deal">
-              <Flame className="h-3 w-3" /> On offer{deal!.price ? ` · £${deal!.price.toFixed(2)}` : ""}
-            </span>
+            <span className="font-medium text-deal">· On offer{deal!.price ? ` £${deal!.price.toFixed(2)}` : ""}</span>
           )}
-          {deal && !viewingStore && (
-            <span className="flex items-center gap-1 text-deal">
-              <Flame className="h-3 w-3" /> On offer
-            </span>
-          )}
+          {deal && !viewingStore && <span className="text-deal">· On offer</span>}
         </div>
-      </div>
+      </button>
 
       <button
         onClick={() => toggleFav(item.id)}
@@ -527,16 +521,10 @@ function ItemRow({
       >
         <Star className={`h-4 w-4 ${item.favorite ? "fill-favorite text-favorite" : ""}`} />
       </button>
-      <button
-        onClick={() => onEditDeal(item)}
-        aria-label="Add deal"
-        className="p-1 text-muted-foreground"
-      >
-        <Tag className="h-4 w-4" />
-      </button>
     </div>
   );
 }
+
 
 /* ---------- ADD ITEM SHEET ---------- */
 
