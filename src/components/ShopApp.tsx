@@ -793,7 +793,7 @@ function BottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
     { id: "more", label: "More", icon: MoreHorizontal },
   ];
   return (
-    <nav className="fixed bottom-0 left-1/2 z-20 w-full max-w-md -translate-x-1/2 border-t border-border bg-background/95 px-2 pb-5 pt-2 backdrop-blur">
+    <nav className="fixed bottom-0 left-1/2 z-20 w-full max-w-md -translate-x-1/2 bg-background/90 px-2 pb-5 pt-2 backdrop-blur-xl">
       <div className="flex items-center justify-around">
         {items.map((it) => {
           const active = tab === it.id;
