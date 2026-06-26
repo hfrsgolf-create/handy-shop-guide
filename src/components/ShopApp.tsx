@@ -108,28 +108,30 @@ function HomeView({
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   return (
-    <div className="space-y-8 px-6 pt-14">
+    <div className="space-y-10 px-6 pt-16">
       <header>
         <p className="text-sm text-muted-foreground">{greet}, Sarah</p>
-        <h1 className="text-3xl font-semibold tracking-tight">What's on the list?</h1>
+        <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-tight">
+          What's on the list?
+        </h1>
       </header>
 
       <button
         onClick={onOpenDeals}
-        className="flex w-full items-center justify-between rounded-3xl bg-deal-soft p-5 text-left transition active:scale-[0.99]"
+        className="flex w-full items-center justify-between rounded-3xl bg-deal-soft px-6 py-7 text-left transition active:scale-[0.99]"
       >
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-deal">Today</p>
-          <p className="mt-1 text-2xl font-semibold text-foreground">
+          <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-deal">Today</p>
+          <p className="mt-2 text-[26px] font-semibold leading-tight text-foreground">
             {dealsCount} {dealsCount === 1 ? "item" : "items"} on offer
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">Tap to see all deals</p>
+          <p className="mt-1.5 text-sm text-muted-foreground">Tap to see all deals</p>
         </div>
-        <Flame className="h-8 w-8 text-deal" />
+        <Flame className="h-7 w-7 text-deal" />
       </button>
 
       <section>
-        <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <h2 className="mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
           Quick access
         </h2>
         <div className="rounded-3xl bg-card">
@@ -159,14 +161,14 @@ function HomeView({
 
       {activity.length > 0 && (
         <section>
-          <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <h2 className="mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
             Recent activity
           </h2>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {activity.slice(0, 4).map((a) => (
-              <div key={a.id} className="rounded-2xl bg-card px-4 py-3 text-sm">
+              <div key={a.id} className="rounded-2xl bg-card px-5 py-4 text-sm">
                 <p className="text-foreground">{a.text}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {formatDistanceToNow(a.at, { addSuffix: true })}
                 </p>
               </div>
@@ -177,6 +179,7 @@ function HomeView({
     </div>
   );
 }
+
 
 /* ---------- LISTS (master + store) ---------- */
 
