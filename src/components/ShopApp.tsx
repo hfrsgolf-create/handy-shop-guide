@@ -268,7 +268,7 @@ function Section({
   if (items.length === 0) return null;
   return (
     <section className="mt-6">
-      <h2 className={`mb-2 px-1 text-xs font-semibold uppercase tracking-wider ${muted ? "text-muted-foreground" : "text-foreground"}`}>
+      <h2 className={`mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] ${muted ? "text-muted-foreground" : "text-foreground"}`}>
         {title}
       </h2>
       <div className="space-y-2">
@@ -419,7 +419,7 @@ function MoreView() {
 
       {activity.length > 0 && (
         <div className="mt-5">
-          <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <h2 className="mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
             Activity feed
           </h2>
           <div className="space-y-1.5 pb-6">
@@ -750,7 +750,7 @@ function RowButton({
   sub?: string;
 }) {
   return (
-    <button onClick={onClick} className="flex w-full items-center gap-3 px-5 py-4 text-left">
+    <button onClick={onClick} className="flex w-full items-center gap-4 px-5 py-5 text-left">
       <div className="flex h-9 w-9 items-center justify-center">{left}</div>
       <div className="flex-1">
         <p className="font-medium">{title}</p>
@@ -762,7 +762,7 @@ function RowButton({
 }
 
 function Divider() {
-  return <div className="ml-[68px] h-px bg-border" />;
+  return <div className="ml-[72px] h-px bg-border/60" />;
 }
 
 function StoreDot({ color, large }: { color: string; large?: boolean }) {
