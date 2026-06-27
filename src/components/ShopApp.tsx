@@ -16,6 +16,7 @@ import {
   X,
   Tag,
   ArrowLeft,
+  Sparkles,
   Store as StoreIcon,
 } from "lucide-react";
 import {
