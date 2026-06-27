@@ -121,7 +121,7 @@ export const useShop = create<State>((set, get) => ({
     });
   },
 
-  addItem: async ({ name, preferredStore, isLocked, notes }) => {
+  addItem: async ({ name, preferredStore, isLocked, notes, favorite }) => {
     const { householdId, userName } = get();
     if (!householdId) return;
     const { data, error } = await supabase
@@ -132,6 +132,7 @@ export const useShop = create<State>((set, get) => ({
         preferred_store: preferredStore,
         is_locked: isLocked,
         notes: notes || null,
+        favorite: !!favorite,
         created_by_name: userName,
       })
       .select("*")
