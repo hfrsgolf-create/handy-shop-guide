@@ -410,13 +410,37 @@ function MoreView() {
   const clear = useShop((s) => s.clearChecked);
   const items = useShop((s) => s.items);
   const activity = useShop((s) => s.activity);
+  const resetStore = useShop((s) => s.reset);
+  const { profile, user, signOut } = useAuth();
+  const [householdName, setHouseholdName] = useState<string>("");
+
+  useEffect(() => {
+    if (!profile?.household_id) return;
+    let active = true;
+    import("@/integrations/supabase/client").then(({ supabase }) =>
+      supabase
+        .from("households")
+        .select("name")
+        .eq("id", profile.household_id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (active && data?.name) setHouseholdName(data.name);
+        }),
+    );
+    return () => {
+      active = false;
+    };
+  }, [profile?.household_id]);
+
   return (
     <div className="px-6 pt-14">
       <h1 className="text-3xl font-semibold tracking-tight">More</h1>
       <div className="mt-5 rounded-3xl bg-card p-5">
-        <p className="text-sm text-muted-foreground">Shared account</p>
-        <p className="mt-1 font-medium">The Henderson household</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">Sarah, Tom · 2 devices</p>
+        <p className="text-sm text-muted-foreground">Signed in as</p>
+        <p className="mt-1 font-medium">{profile?.name || user?.email}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {householdName || "Your household"}
+        </p>
       </div>
       <div className="mt-3 rounded-3xl bg-card p-5">
         <p className="text-sm text-muted-foreground">Stats</p>
@@ -434,6 +458,16 @@ function MoreView() {
           Clear checked items
         </button>
       </div>
+
+      <button
+        onClick={async () => {
+          await signOut();
+          resetStore();
+        }}
+        className="mt-3 w-full rounded-full bg-secondary py-3 text-sm font-medium text-secondary-foreground"
+      >
+        Sign out
+      </button>
 
       {activity.length > 0 && (
         <div className="mt-5">
