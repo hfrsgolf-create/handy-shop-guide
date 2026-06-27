@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth-context";
 import { Toaster, toast } from "sonner";
 import { formatDistanceToNow, format } from "date-fns";
 import {
@@ -30,10 +31,25 @@ import {
 type Tab = "home" | "favs" | "lists" | "deals" | "more";
 
 export function ShopApp() {
+  const { profile } = useAuth();
+  const initStore = useShop((s) => s.init);
+  const ready = useShop((s) => s.ready);
   const [tab, setTab] = useState<Tab>("home");
   const [adding, setAdding] = useState(false);
   const [activeStore, setActiveStore] = useState<Exclude<StoreId, "any"> | null>(null);
   const [editingDealFor, setEditingDealFor] = useState<Item | null>(null);
+
+  useEffect(() => {
+    if (profile) initStore(profile.household_id, profile.name);
+  }, [profile?.household_id, profile?.name, initStore]);
+
+  if (!profile || !ready) {
+    return (
+      <div className="mx-auto flex min-h-dvh max-w-md items-center justify-center bg-background text-sm text-muted-foreground">
+        Loading your list…
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-background text-foreground">
