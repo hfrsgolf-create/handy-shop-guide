@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { supabase } from "@/integrations/supabase/client";
 
 export type StoreId = "tesco" | "sainsburys" | "aldi" | "ms" | "any";
 
@@ -16,13 +16,13 @@ export const storeName = (id: StoreId | null | undefined) =>
 export type Deal = {
   store: Exclude<StoreId, "any">;
   price?: number;
-  expiry: string; // ISO date
+  expiry: string;
 };
 
 export type Item = {
   id: string;
   name: string;
-  preferredStore: StoreId; // "any" if no pref
+  preferredStore: StoreId;
   isLocked: boolean;
   notes?: string;
   favorite: boolean;
@@ -33,97 +33,186 @@ export type Item = {
 
 export type Activity = { id: string; text: string; at: number };
 
+type DbItem = {
+  id: string;
+  name: string;
+  preferred_store: string;
+  is_locked: boolean;
+  notes: string | null;
+  favorite: boolean;
+  checked: boolean;
+  created_at: string;
+  deal_store: string | null;
+  deal_price: number | null;
+  deal_expiry: string | null;
+};
+
+const toItem = (r: DbItem): Item => ({
+  id: r.id,
+  name: r.name,
+  preferredStore: r.preferred_store as StoreId,
+  isLocked: r.is_locked,
+  notes: r.notes ?? undefined,
+  favorite: r.favorite,
+  checked: r.checked,
+  createdAt: new Date(r.created_at).getTime(),
+  deal: r.deal_store && r.deal_expiry
+    ? {
+        store: r.deal_store as Exclude<StoreId, "any">,
+        price: r.deal_price ?? undefined,
+        expiry: r.deal_expiry,
+      }
+    : undefined,
+});
+
 type State = {
   items: Item[];
   activity: Activity[];
-  addItem: (i: Omit<Item, "id" | "createdAt" | "favorite" | "checked"> & { favorite?: boolean }) => void;
-  toggleCheck: (id: string) => void;
-  removeItem: (id: string) => void;
-  toggleFav: (id: string) => void;
-  setDeal: (id: string, deal: Deal | undefined) => void;
-  quickAddFromFavorite: (id: string) => void;
-  clearChecked: () => void;
+  ready: boolean;
+  householdId: string | null;
+  userName: string;
+  init: (householdId: string, userName: string) => Promise<void>;
+  reset: () => void;
+  addItem: (i: { name: string; preferredStore: StoreId; isLocked: boolean; notes?: string }) => Promise<void>;
+  toggleCheck: (id: string) => Promise<void>;
+  removeItem: (id: string) => Promise<void>;
+  toggleFav: (id: string) => Promise<void>;
+  setDeal: (id: string, deal: Deal | undefined) => Promise<void>;
+  quickAddFromFavorite: (id: string) => Promise<void>;
+  clearChecked: () => Promise<void>;
 };
 
-const uid = () => Math.random().toString(36).slice(2, 10);
-
-export const useShop = create<State>()(
-  persist(
-    (set, get) => ({
-      items: seed(),
-      activity: [],
-      addItem: (i) => {
-        const item: Item = {
-          id: uid(),
-          name: i.name.trim(),
-          preferredStore: i.preferredStore,
-          isLocked: i.isLocked,
-          notes: i.notes,
-          favorite: i.favorite ?? false,
-          checked: false,
-          createdAt: Date.now(),
-          deal: i.deal,
-        };
-        set({
-          items: [item, ...get().items],
-          activity: [
-            { id: uid(), text: `Sarah added ${item.name} to the list`, at: Date.now() },
-            ...get().activity,
-          ].slice(0, 30),
-        });
-      },
-      toggleCheck: (id) =>
-        set({
-          items: get().items.map((it) => (it.id === id ? { ...it, checked: !it.checked } : it)),
-        }),
-      removeItem: (id) => set({ items: get().items.filter((it) => it.id !== id) }),
-      toggleFav: (id) =>
-        set({
-          items: get().items.map((it) => (it.id === id ? { ...it, favorite: !it.favorite } : it)),
-        }),
-      setDeal: (id, deal) => {
-        const item = get().items.find((i) => i.id === id);
-        set({
-          items: get().items.map((it) => (it.id === id ? { ...it, deal } : it)),
-          activity: deal && item
-            ? [
-                { id: uid(), text: `${item.name} is on offer at ${storeName(deal.store)}`, at: Date.now() },
-                ...get().activity,
-              ].slice(0, 30)
-            : get().activity,
-        });
-      },
-      quickAddFromFavorite: (id) => {
-        const fav = get().items.find((i) => i.id === id);
-        if (!fav) return;
-        set({
-          items: get().items.map((it) => (it.id === id ? { ...it, checked: false } : it)),
-          activity: [
-            { id: uid(), text: `Sarah added ${fav.name} to the list`, at: Date.now() },
-            ...get().activity,
-          ].slice(0, 30),
-        });
-      },
-      clearChecked: () => set({ items: get().items.filter((it) => !it.checked) }),
-    }),
-    { name: "shoplist-v1" }
-  )
-);
-
-function seed(): Item[] {
-  const now = Date.now();
-  const inDays = (n: number) => new Date(now + n * 86400000).toISOString();
-  return [
-    { id: uid(), name: "Semi-skimmed milk", preferredStore: "tesco", isLocked: false, favorite: true, checked: false, createdAt: now, deal: { store: "aldi", price: 1.15, expiry: inDays(3) } },
-    { id: uid(), name: "Sourdough bread", preferredStore: "ms", isLocked: true, favorite: true, checked: false, createdAt: now - 1000 },
-    { id: uid(), name: "Bananas", preferredStore: "aldi", isLocked: false, favorite: false, checked: false, createdAt: now - 2000 },
-    { id: uid(), name: "Olive oil", preferredStore: "any", isLocked: false, favorite: false, checked: false, createdAt: now - 3000, deal: { store: "sainsburys", price: 4.5, expiry: inDays(5) } },
-    { id: uid(), name: "Greek yoghurt", preferredStore: "sainsburys", isLocked: false, favorite: true, checked: false, createdAt: now - 4000 },
-    { id: uid(), name: "Free-range eggs", preferredStore: "tesco", isLocked: false, favorite: false, checked: false, createdAt: now - 5000, deal: { store: "tesco", price: 2.2, expiry: inDays(2) } },
-  ];
+async function logActivity(householdId: string, text: string) {
+  await supabase.from("activity").insert({ household_id: householdId, text });
 }
 
-// Derived helpers
+export const useShop = create<State>((set, get) => ({
+  items: [],
+  activity: [],
+  ready: false,
+  householdId: null,
+  userName: "",
+
+  reset: () => set({ items: [], activity: [], ready: false, householdId: null, userName: "" }),
+
+  init: async (householdId, userName) => {
+    set({ householdId, userName, ready: false });
+    const [itemsRes, activityRes] = await Promise.all([
+      supabase
+        .from("items")
+        .select("*")
+        .eq("household_id", householdId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("activity")
+        .select("id, text, created_at")
+        .eq("household_id", householdId)
+        .order("created_at", { ascending: false })
+        .limit(30),
+    ]);
+    set({
+      items: (itemsRes.data ?? []).map((r) => toItem(r as DbItem)),
+      activity: (activityRes.data ?? []).map((a) => ({
+        id: a.id,
+        text: a.text,
+        at: new Date(a.created_at).getTime(),
+      })),
+      ready: true,
+    });
+  },
+
+  addItem: async ({ name, preferredStore, isLocked, notes }) => {
+    const { householdId, userName } = get();
+    if (!householdId) return;
+    const { data, error } = await supabase
+      .from("items")
+      .insert({
+        household_id: householdId,
+        name: name.trim(),
+        preferred_store: preferredStore,
+        is_locked: isLocked,
+        notes: notes || null,
+        created_by_name: userName,
+      })
+      .select("*")
+      .single();
+    if (error || !data) return;
+    const item = toItem(data as DbItem);
+    set({ items: [item, ...get().items] });
+    await logActivity(householdId, `${userName || "Someone"} added ${item.name}`);
+    const { data: a } = await supabase
+      .from("activity")
+      .select("id, text, created_at")
+      .eq("household_id", householdId)
+      .order("created_at", { ascending: false })
+      .limit(30);
+    set({
+      activity: (a ?? []).map((row) => ({
+        id: row.id,
+        text: row.text,
+        at: new Date(row.created_at).getTime(),
+      })),
+    });
+  },
+
+  toggleCheck: async (id) => {
+    const it = get().items.find((i) => i.id === id);
+    if (!it) return;
+    set({ items: get().items.map((x) => (x.id === id ? { ...x, checked: !x.checked } : x)) });
+    await supabase.from("items").update({ checked: !it.checked }).eq("id", id);
+  },
+
+  removeItem: async (id) => {
+    set({ items: get().items.filter((x) => x.id !== id) });
+    await supabase.from("items").delete().eq("id", id);
+  },
+
+  toggleFav: async (id) => {
+    const it = get().items.find((i) => i.id === id);
+    if (!it) return;
+    set({ items: get().items.map((x) => (x.id === id ? { ...x, favorite: !x.favorite } : x)) });
+    await supabase.from("items").update({ favorite: !it.favorite }).eq("id", id);
+  },
+
+  setDeal: async (id, deal) => {
+    const { householdId, userName } = get();
+    const it = get().items.find((i) => i.id === id);
+    set({
+      items: get().items.map((x) => (x.id === id ? { ...x, deal } : x)),
+    });
+    await supabase
+      .from("items")
+      .update({
+        deal_store: deal?.store ?? null,
+        deal_price: deal?.price ?? null,
+        deal_expiry: deal?.expiry ?? null,
+      })
+      .eq("id", id);
+    if (deal && it && householdId) {
+      await logActivity(
+        householdId,
+        `${userName || "Someone"} tagged ${it.name} on offer at ${storeName(deal.store)}`,
+      );
+    }
+  },
+
+  quickAddFromFavorite: async (id) => {
+    const { householdId, userName } = get();
+    const it = get().items.find((i) => i.id === id);
+    if (!it) return;
+    set({ items: get().items.map((x) => (x.id === id ? { ...x, checked: false } : x)) });
+    await supabase.from("items").update({ checked: false }).eq("id", id);
+    if (householdId) await logActivity(householdId, `${userName || "Someone"} added ${it.name}`);
+  },
+
+  clearChecked: async () => {
+    const { householdId } = get();
+    if (!householdId) return;
+    set({ items: get().items.filter((x) => !x.checked) });
+    await supabase.from("items").delete().eq("household_id", householdId).eq("checked", true);
+  },
+}));
+
 export const activeDeal = (item: Item) => {
   if (!item.deal) return undefined;
   return new Date(item.deal.expiry).getTime() >= Date.now() ? item.deal : undefined;
@@ -137,7 +226,7 @@ export const itemsForStore = (items: Item[], store: Exclude<StoreId, "any">) => 
   const preferredHere = visible.filter((it) => it.preferredStore === store);
   const anyStore = visible.filter((it) => it.preferredStore === "any");
   const canBuyHere = visible.filter(
-    (it) => it.preferredStore !== store && it.preferredStore !== "any" && !it.isLocked
+    (it) => it.preferredStore !== store && it.preferredStore !== "any" && !it.isLocked,
   );
   return { preferredHere, anyStore, canBuyHere };
 };
