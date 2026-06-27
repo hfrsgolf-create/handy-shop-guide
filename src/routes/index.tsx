@@ -1,7 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { ShopApp } from "@/components/ShopApp";
+import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Trolly — smart shopping lists" },
@@ -14,5 +16,10 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return <div className="mx-auto flex min-h-dvh max-w-md items-center justify-center bg-background text-sm text-muted-foreground">Loading…</div>;
+  }
+  if (!user) return <Navigate to="/auth" />;
   return <ShopApp />;
 }
