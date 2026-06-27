@@ -16,6 +16,7 @@ import {
   X,
   Tag,
   ArrowLeft,
+  Sparkles,
   Store as StoreIcon,
 } from "lucide-react";
 import {
@@ -34,16 +35,33 @@ export function ShopApp() {
   const { profile } = useAuth();
   const initStore = useShop((s) => s.init);
   const ready = useShop((s) => s.ready);
+  const items = useShop((s) => s.items);
   const [tab, setTab] = useState<Tab>("home");
   const [adding, setAdding] = useState(false);
+  const [addDefaults, setAddDefaults] = useState<AddDefaults | undefined>(undefined);
   const [activeStore, setActiveStore] = useState<Exclude<StoreId, "any"> | null>(null);
   const [editingDealFor, setEditingDealFor] = useState<Item | null>(null);
+  const [spinnerExpired, setSpinnerExpired] = useState(false);
 
   useEffect(() => {
     if (profile) initStore(profile.household_id, profile.name);
   }, [profile?.household_id, profile?.name, initStore]);
 
-  if (!profile || !ready) {
+  // Cap loading spinner at ~1.5s; after that drop straight to the empty state.
+  useEffect(() => {
+    const t = setTimeout(() => setSpinnerExpired(true), 1500);
+    return () => clearTimeout(t);
+  }, []);
+
+  const openAdd = (defaults?: AddDefaults) => {
+    setAddDefaults(defaults);
+    setAdding(true);
+  };
+
+  const loaded = !!profile && ready;
+  const showSpinner = !loaded && !spinnerExpired;
+
+  if (showSpinner) {
     return (
       <div className="mx-auto flex min-h-dvh max-w-md items-center justify-center bg-background text-sm text-muted-foreground">
         Loading your list…
@@ -51,57 +69,133 @@ export function ShopApp() {
     );
   }
 
+  // No profile after the grace window — surface a clear retryable state instead of spinning forever.
+  if (!profile) {
+    return (
+      <div className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 bg-background px-8 text-center">
+        <p className="text-sm text-muted-foreground">We couldn't load your profile.</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground"
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  const isEmpty = loaded && items.length === 0;
+
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-background text-foreground">
       <Toaster position="top-center" richColors={false} toastOptions={{ className: "rounded-2xl" }} />
 
       <main className="flex-1 overflow-y-auto pb-28">
-        {tab === "home" && (
-          <HomeView
-            onOpenStore={(s) => {
-              setActiveStore(s);
-              setTab("lists");
-            }}
-            onOpenDeals={() => setTab("deals")}
-            onOpenMaster={() => {
-              setActiveStore(null);
-              setTab("lists");
-            }}
-          />
+        {isEmpty ? (
+          <EmptyFirstRun onAdd={openAdd} />
+        ) : (
+          <>
+            {tab === "home" && (
+              <HomeView
+                onOpenStore={(s) => {
+                  setActiveStore(s);
+                  setTab("lists");
+                }}
+                onOpenDeals={() => setTab("deals")}
+                onOpenMaster={() => {
+                  setActiveStore(null);
+                  setTab("lists");
+                }}
+              />
+            )}
+            {tab === "favs" && <FavoritesView />}
+            {tab === "lists" && (
+              <ListsView
+                activeStore={activeStore}
+                setActiveStore={setActiveStore}
+                onEditDeal={setEditingDealFor}
+              />
+            )}
+            {tab === "deals" && (
+              <DealsView
+                onOpenStore={(s) => {
+                  setActiveStore(s);
+                  setTab("lists");
+                }}
+              />
+            )}
+            {tab === "more" && <MoreView />}
+          </>
         )}
-        {tab === "favs" && <FavoritesView />}
-        {tab === "lists" && (
-          <ListsView
-            activeStore={activeStore}
-            setActiveStore={setActiveStore}
-            onEditDeal={setEditingDealFor}
-          />
-        )}
-        {tab === "deals" && (
-          <DealsView
-            onOpenStore={(s) => {
-              setActiveStore(s);
-              setTab("lists");
-            }}
-          />
-        )}
-        {tab === "more" && <MoreView />}
       </main>
 
-      <button
-        onClick={() => setAdding(true)}
-        aria-label="Add item"
-        className="fixed bottom-24 left-1/2 z-30 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft transition active:scale-95"
-      >
-        <Plus className="h-6 w-6" />
-      </button>
+      {!isEmpty && (
+        <button
+          onClick={() => openAdd()}
+          aria-label="Add item"
+          className="fixed bottom-24 left-1/2 z-30 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft transition active:scale-95"
+        >
+          <Plus className="h-6 w-6" />
+        </button>
+      )}
 
-      <BottomNav tab={tab} setTab={setTab} />
+      {!isEmpty && <BottomNav tab={tab} setTab={setTab} />}
 
-      {adding && <AddItemSheet onClose={() => setAdding(false)} />}
+      {adding && (
+        <AddItemSheet
+          initial={addDefaults}
+          onClose={() => {
+            setAdding(false);
+            setAddDefaults(undefined);
+          }}
+          onAdded={() => setTab("home")}
+        />
+      )}
       {editingDealFor && (
         <DealSheet item={editingDealFor} onClose={() => setEditingDealFor(null)} />
       )}
+    </div>
+  );
+}
+
+type AddDefaults = { store?: StoreId; favorite?: boolean; locked?: boolean };
+
+/* ---------- EMPTY FIRST RUN ---------- */
+
+function EmptyFirstRun({ onAdd }: { onAdd: (defaults?: AddDefaults) => void }) {
+  const { profile } = useAuth();
+  const firstName = profile?.name?.split(" ")[0] || "there";
+  return (
+    <div className="flex min-h-[calc(100dvh-2rem)] flex-col items-center justify-center px-8 pt-10 text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
+        <ListChecks className="h-7 w-7 text-primary" />
+      </div>
+      <h1 className="mt-6 text-[26px] font-semibold tracking-tight">Your list is empty</h1>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Welcome, {firstName}. Add something you need and we'll sort it across your shops.
+      </p>
+
+      <button
+        onClick={() => onAdd()}
+        className="mt-8 w-full rounded-full bg-primary py-3.5 text-base font-medium text-primary-foreground shadow-soft active:scale-[0.99]"
+      >
+        Add your first item
+      </button>
+
+      <div className="mt-3 grid w-full grid-cols-2 gap-2">
+        <button
+          onClick={() => onAdd({ store: STORES[0].id, locked: true })}
+          className="flex items-center justify-center gap-2 rounded-full bg-secondary py-3 text-sm font-medium text-secondary-foreground"
+        >
+          <StoreIcon className="h-4 w-4" /> Add shop
+        </button>
+        <button
+          onClick={() => onAdd({ favorite: true })}
+          className="flex items-center justify-center gap-2 rounded-full bg-secondary py-3 text-sm font-medium text-secondary-foreground"
+        >
+          <Sparkles className="h-4 w-4" /> Add favourite
+        </button>
+      </div>
     </div>
   );
 }
@@ -583,17 +677,33 @@ function ItemRow({
 
 /* ---------- ADD ITEM SHEET ---------- */
 
-function AddItemSheet({ onClose }: { onClose: () => void }) {
+function AddItemSheet({
+  onClose,
+  onAdded,
+  initial,
+}: {
+  onClose: () => void;
+  onAdded?: () => void;
+  initial?: { store?: StoreId; favorite?: boolean; locked?: boolean };
+}) {
   const addItem = useShop((s) => s.addItem);
   const [name, setName] = useState("");
-  const [store, setStore] = useState<StoreId>("any");
-  const [locked, setLocked] = useState(false);
+  const [store, setStore] = useState<StoreId>(initial?.store ?? "any");
+  const [locked, setLocked] = useState(!!initial?.locked);
+  const [favorite, setFavorite] = useState(!!initial?.favorite);
   const [notes, setNotes] = useState("");
 
-  const submit = () => {
+  const submit = async () => {
     if (!name.trim()) return;
-    addItem({ name, preferredStore: store, isLocked: locked && store !== "any", notes });
+    await addItem({
+      name,
+      preferredStore: store,
+      isLocked: locked && store !== "any",
+      notes,
+      favorite,
+    });
     toast.success(`Added ${name.trim()}`);
+    onAdded?.();
     onClose();
   };
 
@@ -635,6 +745,19 @@ function AddItemSheet({ onClose }: { onClose: () => void }) {
             </div>
           </button>
         )}
+
+        <button
+          onClick={() => setFavorite((v) => !v)}
+          className="flex w-full items-center justify-between rounded-2xl bg-secondary px-4 py-3"
+        >
+          <div className="flex items-center gap-2 text-sm">
+            <Star className={`h-4 w-4 ${favorite ? "fill-favorite text-favorite" : ""}`} />
+            Save as favourite
+          </div>
+          <div className={`h-6 w-10 rounded-full p-0.5 transition ${favorite ? "bg-primary" : "bg-border"}`}>
+            <div className={`h-5 w-5 rounded-full bg-background transition ${favorite ? "translate-x-4" : ""}`} />
+          </div>
+        </button>
 
         <Field label="Notes (optional)">
           <input

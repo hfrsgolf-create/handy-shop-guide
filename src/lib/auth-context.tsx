@@ -37,8 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!session?.user) return;
     let cancelled = false;
     (async () => {
-      // Retry briefly because the signup trigger creates the profile right after auth.users insert.
-      for (let i = 0; i < 5; i++) {
+      // Retry because the signup trigger creates the profile right after auth.users insert.
+      for (let i = 0; i < 12; i++) {
         const { data } = await supabase
           .from("profiles")
           .select("id, name, household_id")
@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(data as Profile);
           return;
         }
-        await new Promise((r) => setTimeout(r, 250));
+        await new Promise((r) => setTimeout(r, 300));
       }
     })();
     return () => {
