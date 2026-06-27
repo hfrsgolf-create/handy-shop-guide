@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth-context";
 import { Toaster, toast } from "sonner";
 import { formatDistanceToNow, format } from "date-fns";
 import {
@@ -30,10 +31,25 @@ import {
 type Tab = "home" | "favs" | "lists" | "deals" | "more";
 
 export function ShopApp() {
+  const { profile } = useAuth();
+  const initStore = useShop((s) => s.init);
+  const ready = useShop((s) => s.ready);
   const [tab, setTab] = useState<Tab>("home");
   const [adding, setAdding] = useState(false);
   const [activeStore, setActiveStore] = useState<Exclude<StoreId, "any"> | null>(null);
   const [editingDealFor, setEditingDealFor] = useState<Item | null>(null);
+
+  useEffect(() => {
+    if (profile) initStore(profile.household_id, profile.name);
+  }, [profile?.household_id, profile?.name, initStore]);
+
+  if (!profile || !ready) {
+    return (
+      <div className="mx-auto flex min-h-dvh max-w-md items-center justify-center bg-background text-sm text-muted-foreground">
+        Loading your list…
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-background text-foreground">
@@ -103,6 +119,8 @@ function HomeView({
 }) {
   const items = useShop((s) => s.items);
   const activity = useShop((s) => s.activity);
+  const { profile } = useAuth();
+  const firstName = profile?.name?.split(" ")[0] || "there";
   const dealsCount = items.filter((i) => activeDeal(i)).length;
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
@@ -110,7 +128,7 @@ function HomeView({
   return (
     <div className="space-y-10 px-6 pt-16">
       <header>
-        <p className="text-sm text-muted-foreground">{greet}, Sarah</p>
+        <p className="text-sm text-muted-foreground">{greet}, {firstName}</p>
         <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-tight">
           What's on the list?
         </h1>
@@ -392,13 +410,37 @@ function MoreView() {
   const clear = useShop((s) => s.clearChecked);
   const items = useShop((s) => s.items);
   const activity = useShop((s) => s.activity);
+  const resetStore = useShop((s) => s.reset);
+  const { profile, user, signOut } = useAuth();
+  const [householdName, setHouseholdName] = useState<string>("");
+
+  useEffect(() => {
+    if (!profile?.household_id) return;
+    let active = true;
+    import("@/integrations/supabase/client").then(({ supabase }) =>
+      supabase
+        .from("households")
+        .select("name")
+        .eq("id", profile.household_id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (active && data?.name) setHouseholdName(data.name);
+        }),
+    );
+    return () => {
+      active = false;
+    };
+  }, [profile?.household_id]);
+
   return (
     <div className="px-6 pt-14">
       <h1 className="text-3xl font-semibold tracking-tight">More</h1>
       <div className="mt-5 rounded-3xl bg-card p-5">
-        <p className="text-sm text-muted-foreground">Shared account</p>
-        <p className="mt-1 font-medium">The Henderson household</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">Sarah, Tom · 2 devices</p>
+        <p className="text-sm text-muted-foreground">Signed in as</p>
+        <p className="mt-1 font-medium">{profile?.name || user?.email}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {householdName || "Your household"}
+        </p>
       </div>
       <div className="mt-3 rounded-3xl bg-card p-5">
         <p className="text-sm text-muted-foreground">Stats</p>
@@ -416,6 +458,16 @@ function MoreView() {
           Clear checked items
         </button>
       </div>
+
+      <button
+        onClick={async () => {
+          await signOut();
+          resetStore();
+        }}
+        className="mt-3 w-full rounded-full bg-secondary py-3 text-sm font-medium text-secondary-foreground"
+      >
+        Sign out
+      </button>
 
       {activity.length > 0 && (
         <div className="mt-5">
