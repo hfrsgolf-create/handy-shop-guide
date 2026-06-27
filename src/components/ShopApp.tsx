@@ -677,17 +677,33 @@ function ItemRow({
 
 /* ---------- ADD ITEM SHEET ---------- */
 
-function AddItemSheet({ onClose }: { onClose: () => void }) {
+function AddItemSheet({
+  onClose,
+  onAdded,
+  initial,
+}: {
+  onClose: () => void;
+  onAdded?: () => void;
+  initial?: { store?: StoreId; favorite?: boolean; locked?: boolean };
+}) {
   const addItem = useShop((s) => s.addItem);
   const [name, setName] = useState("");
-  const [store, setStore] = useState<StoreId>("any");
-  const [locked, setLocked] = useState(false);
+  const [store, setStore] = useState<StoreId>(initial?.store ?? "any");
+  const [locked, setLocked] = useState(!!initial?.locked);
+  const [favorite, setFavorite] = useState(!!initial?.favorite);
   const [notes, setNotes] = useState("");
 
-  const submit = () => {
+  const submit = async () => {
     if (!name.trim()) return;
-    addItem({ name, preferredStore: store, isLocked: locked && store !== "any", notes });
+    await addItem({
+      name,
+      preferredStore: store,
+      isLocked: locked && store !== "any",
+      notes,
+      favorite,
+    });
     toast.success(`Added ${name.trim()}`);
+    onAdded?.();
     onClose();
   };
 
