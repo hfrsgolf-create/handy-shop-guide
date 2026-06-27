@@ -73,7 +73,7 @@ type State = {
   userName: string;
   init: (householdId: string, userName: string) => Promise<void>;
   reset: () => void;
-  addItem: (i: { name: string; preferredStore: StoreId; isLocked: boolean; notes?: string }) => Promise<void>;
+  addItem: (i: { name: string; preferredStore: StoreId; isLocked: boolean; notes?: string; favorite?: boolean }) => Promise<void>;
   toggleCheck: (id: string) => Promise<void>;
   removeItem: (id: string) => Promise<void>;
   toggleFav: (id: string) => Promise<void>;
