@@ -14,13 +14,147 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      activity: {
+        Row: {
+          created_at: string
+          household_id: string
+          id: string
+          text: string
+        }
+        Insert: {
+          created_at?: string
+          household_id: string
+          id?: string
+          text: string
+        }
+        Update: {
+          created_at?: string
+          household_id?: string
+          id?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      households: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      items: {
+        Row: {
+          checked: boolean
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          deal_expiry: string | null
+          deal_price: number | null
+          deal_store: string | null
+          favorite: boolean
+          household_id: string
+          id: string
+          is_locked: boolean
+          name: string
+          notes: string | null
+          preferred_store: string
+        }
+        Insert: {
+          checked?: boolean
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          deal_expiry?: string | null
+          deal_price?: number | null
+          deal_store?: string | null
+          favorite?: boolean
+          household_id: string
+          id?: string
+          is_locked?: boolean
+          name: string
+          notes?: string | null
+          preferred_store?: string
+        }
+        Update: {
+          checked?: boolean
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          deal_expiry?: string | null
+          deal_price?: number | null
+          deal_store?: string | null
+          favorite?: boolean
+          household_id?: string
+          id?: string
+          is_locked?: boolean
+          name?: string
+          notes?: string | null
+          preferred_store?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "items_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          household_id: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          household_id: string
+          id: string
+          name?: string
+        }
+        Update: {
+          created_at?: string
+          household_id?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      current_household_id: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
