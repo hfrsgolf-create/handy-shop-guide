@@ -746,6 +746,19 @@ function AddItemSheet({
           </button>
         )}
 
+        <button
+          onClick={() => setFavorite((v) => !v)}
+          className="flex w-full items-center justify-between rounded-2xl bg-secondary px-4 py-3"
+        >
+          <div className="flex items-center gap-2 text-sm">
+            <Star className={`h-4 w-4 ${favorite ? "fill-favorite text-favorite" : ""}`} />
+            Save as favourite
+          </div>
+          <div className={`h-6 w-10 rounded-full p-0.5 transition ${favorite ? "bg-primary" : "bg-border"}`}>
+            <div className={`h-5 w-5 rounded-full bg-background transition ${favorite ? "translate-x-4" : ""}`} />
+          </div>
+        </button>
+
         <Field label="Notes (optional)">
           <input
             value={notes}
