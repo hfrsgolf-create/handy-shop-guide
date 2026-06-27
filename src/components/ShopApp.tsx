@@ -119,6 +119,8 @@ function HomeView({
 }) {
   const items = useShop((s) => s.items);
   const activity = useShop((s) => s.activity);
+  const { profile } = useAuth();
+  const firstName = profile?.name?.split(" ")[0] || "there";
   const dealsCount = items.filter((i) => activeDeal(i)).length;
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
@@ -126,7 +128,7 @@ function HomeView({
   return (
     <div className="space-y-10 px-6 pt-16">
       <header>
-        <p className="text-sm text-muted-foreground">{greet}, Sarah</p>
+        <p className="text-sm text-muted-foreground">{greet}, {firstName}</p>
         <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-tight">
           What's on the list?
         </h1>
