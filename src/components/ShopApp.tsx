@@ -69,22 +69,8 @@ export function ShopApp() {
     );
   }
 
-  // No profile after the grace window — surface a clear retryable state instead of spinning forever.
-  if (!profile) {
-    return (
-      <div className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 bg-background px-8 text-center">
-        <p className="text-sm text-muted-foreground">We couldn't load your profile.</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground"
-        >
-          Try again
-        </button>
-      </div>
-    );
-  }
+  const isEmpty = !loaded || items.length === 0;
 
-  const isEmpty = loaded && items.length === 0;
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-background text-foreground">

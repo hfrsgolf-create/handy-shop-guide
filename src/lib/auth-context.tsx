@@ -37,8 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!session?.user) return;
     let cancelled = false;
     (async () => {
-      // Retry because the signup trigger creates the profile right after auth.users insert.
-      for (let i = 0; i < 12; i++) {
+      // Try a few quick reads in case the signup trigger is still creating the profile.
+      for (let i = 0; i < 4; i++) {
         const { data } = await supabase
           .from("profiles")
           .select("id, name, household_id")
@@ -49,13 +49,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(data as Profile);
           return;
         }
-        await new Promise((r) => setTimeout(r, 300));
+        await new Promise((r) => setTimeout(r, 250));
+      }
+      // Failsafe: ask the DB to create the profile + household if it's still missing.
+      if (cancelled) return;
+      const { data: ensured, error } = await supabase.rpc("ensure_profile");
+      if (cancelled) return;
+      if (!error && ensured) {
+        const row = Array.isArray(ensured) ? ensured[0] : ensured;
+        if (row) {
+          setProfile({ id: row.id, name: row.name, household_id: row.household_id } as Profile);
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
   }, [session?.user?.id]);
+
 
   const value: AuthCtx = {
     user: session?.user ?? null,
