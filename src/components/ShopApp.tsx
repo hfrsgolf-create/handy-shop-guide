@@ -1,45 +1,49 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Toaster, toast } from "sonner";
-import { formatDistanceToNow, format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import {
   Home,
-  Star,
-  ListChecks,
-  Flame,
-  MoreHorizontal,
   Plus,
   Check,
   Lock,
   ChevronRight,
-  Trash2,
   X,
-  Tag,
   ArrowLeft,
-  Sparkles,
+  Star,
+  Flame,
+  ShoppingBasket,
+  ListChecks,
   Store as StoreIcon,
+  Settings2,
+  ArrowUp,
+  ArrowDown,
+  Trash2,
 } from "lucide-react";
 import {
   useShop,
   STORES,
   storeName,
   activeDeal,
-  itemsForStore,
   type Item,
   type StoreId,
 } from "@/lib/shop-store";
+import { useUserShops } from "@/lib/user-shops";
 
-type Tab = "home" | "favs" | "lists" | "deals" | "more";
+type Screen =
+  | { name: "home" }
+  | { name: "goShopping" }
+  | { name: "store"; storeId: Exclude<StoreId, "any"> }
+  | { name: "addItem" }
+  | { name: "favourites" }
+  | { name: "manageShops" }
+  | { name: "masterList" };
 
 export function ShopApp() {
   const { profile } = useAuth();
   const initStore = useShop((s) => s.init);
   const ready = useShop((s) => s.ready);
-  const items = useShop((s) => s.items);
-  const [tab, setTab] = useState<Tab>("home");
-  const [adding, setAdding] = useState(false);
-  const [addDefaults, setAddDefaults] = useState<AddDefaults | undefined>(undefined);
-  const [activeStore, setActiveStore] = useState<Exclude<StoreId, "any"> | null>(null);
+  const [screen, setScreen] = useState<Screen>({ name: "home" });
   const [editingDealFor, setEditingDealFor] = useState<Item | null>(null);
   const [spinnerExpired, setSpinnerExpired] = useState(false);
 
@@ -47,21 +51,13 @@ export function ShopApp() {
     if (profile) initStore(profile.household_id, profile.name);
   }, [profile?.household_id, profile?.name, initStore]);
 
-  // Cap loading spinner at ~1.5s; after that drop straight to the empty state.
   useEffect(() => {
     const t = setTimeout(() => setSpinnerExpired(true), 1500);
     return () => clearTimeout(t);
   }, []);
 
-  const openAdd = (defaults?: AddDefaults) => {
-    setAddDefaults(defaults);
-    setAdding(true);
-  };
-
   const loaded = !!profile && ready;
-  const showSpinner = !loaded && !spinnerExpired;
-
-  if (showSpinner) {
+  if (!loaded && !spinnerExpired) {
     return (
       <div className="mx-auto flex min-h-dvh max-w-md items-center justify-center bg-background text-sm text-muted-foreground">
         Loading your list…
@@ -69,414 +65,122 @@ export function ShopApp() {
     );
   }
 
-  const isEmpty = !loaded || items.length === 0;
-
+  const go = (s: Screen) => setScreen(s);
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-background text-foreground">
       <Toaster position="top-center" richColors={false} toastOptions={{ className: "rounded-2xl" }} />
 
       <main className="flex-1 overflow-y-auto pb-28">
-        {isEmpty ? (
-          <EmptyFirstRun onAdd={openAdd} />
-        ) : (
-          <>
-            {tab === "home" && (
-              <HomeView
-                onOpenStore={(s) => {
-                  setActiveStore(s);
-                  setTab("lists");
-                }}
-                onOpenDeals={() => setTab("deals")}
-                onOpenMaster={() => {
-                  setActiveStore(null);
-                  setTab("lists");
-                }}
-              />
-            )}
-            {tab === "favs" && <FavoritesView />}
-            {tab === "lists" && (
-              <ListsView
-                activeStore={activeStore}
-                setActiveStore={setActiveStore}
-                onEditDeal={setEditingDealFor}
-              />
-            )}
-            {tab === "deals" && (
-              <DealsView
-                onOpenStore={(s) => {
-                  setActiveStore(s);
-                  setTab("lists");
-                }}
-              />
-            )}
-            {tab === "more" && <MoreView />}
-          </>
+        {screen.name === "home" && <HomeScreen go={go} />}
+        {screen.name === "goShopping" && <GoShoppingScreen go={go} />}
+        {screen.name === "store" && (
+          <StoreScreen storeId={screen.storeId} go={go} onEditDeal={setEditingDealFor} />
         )}
+        {screen.name === "addItem" && <AddItemScreen go={go} />}
+        {screen.name === "favourites" && <FavouritesScreen go={go} />}
+        {screen.name === "manageShops" && <ManageShopsScreen go={go} />}
+        {screen.name === "masterList" && <MasterListScreen go={go} onEditDeal={setEditingDealFor} />}
       </main>
 
-      {!isEmpty && (
-        <button
-          onClick={() => openAdd()}
-          aria-label="Add item"
-          className="fixed bottom-24 left-1/2 z-30 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft transition active:scale-95"
-        >
-          <Plus className="h-6 w-6" />
-        </button>
-      )}
+      <BottomBar current={screen} go={go} />
 
-      {!isEmpty && <BottomNav tab={tab} setTab={setTab} />}
-
-      {adding && (
-        <AddItemSheet
-          initial={addDefaults}
-          onClose={() => {
-            setAdding(false);
-            setAddDefaults(undefined);
-          }}
-          onAdded={() => setTab("home")}
-        />
-      )}
-      {editingDealFor && (
-        <DealSheet item={editingDealFor} onClose={() => setEditingDealFor(null)} />
-      )}
-    </div>
-  );
-}
-
-type AddDefaults = { store?: StoreId; favorite?: boolean; locked?: boolean };
-
-/* ---------- EMPTY FIRST RUN ---------- */
-
-function EmptyFirstRun({ onAdd }: { onAdd: (defaults?: AddDefaults) => void }) {
-  const { profile } = useAuth();
-  const firstName = profile?.name?.split(" ")[0] || "there";
-  return (
-    <div className="flex min-h-[calc(100dvh-2rem)] flex-col items-center justify-center px-8 pt-10 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
-        <ListChecks className="h-7 w-7 text-primary" />
-      </div>
-      <h1 className="mt-6 text-[26px] font-semibold tracking-tight">Your list is empty</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Welcome, {firstName}. Add something you need and we'll sort it across your shops.
-      </p>
-
-      <button
-        onClick={() => onAdd()}
-        className="mt-8 w-full rounded-full bg-primary py-3.5 text-base font-medium text-primary-foreground shadow-soft active:scale-[0.99]"
-      >
-        Add your first item
-      </button>
-
-      <div className="mt-3 grid w-full grid-cols-2 gap-2">
-        <button
-          onClick={() => onAdd({ store: STORES[0].id, locked: true })}
-          className="flex items-center justify-center gap-2 rounded-full bg-secondary py-3 text-sm font-medium text-secondary-foreground"
-        >
-          <StoreIcon className="h-4 w-4" /> Add shop
-        </button>
-        <button
-          onClick={() => onAdd({ favorite: true })}
-          className="flex items-center justify-center gap-2 rounded-full bg-secondary py-3 text-sm font-medium text-secondary-foreground"
-        >
-          <Sparkles className="h-4 w-4" /> Add favourite
-        </button>
-      </div>
+      {editingDealFor && <DealSheet item={editingDealFor} onClose={() => setEditingDealFor(null)} />}
     </div>
   );
 }
 
 /* ---------- HOME ---------- */
 
-function HomeView({
-  onOpenStore,
-  onOpenDeals,
-  onOpenMaster,
-}: {
-  onOpenStore: (s: Exclude<StoreId, "any">) => void;
-  onOpenDeals: () => void;
-  onOpenMaster: () => void;
-}) {
-  const items = useShop((s) => s.items);
-  const activity = useShop((s) => s.activity);
+function HomeScreen({ go }: { go: (s: Screen) => void }) {
   const { profile } = useAuth();
   const firstName = profile?.name?.split(" ")[0] || "there";
-  const dealsCount = items.filter((i) => activeDeal(i)).length;
-  const hour = new Date().getHours();
-  const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+
+  const actions: { id: Screen["name"]; title: string; sub: string; icon: React.ComponentType<{ className?: string }>; tone: string }[] = [
+    { id: "goShopping", title: "Go shopping", sub: "Pick a store and start ticking off", icon: ShoppingBasket, tone: "bg-primary text-primary-foreground" },
+    { id: "addItem", title: "Add to list", sub: "Type or pick from favourites", icon: Plus, tone: "bg-card" },
+    { id: "favourites", title: "Add favourites", sub: "Save items you buy often", icon: Star, tone: "bg-card" },
+    { id: "manageShops", title: "Manage shops", sub: "Reorder or add new stores", icon: StoreIcon, tone: "bg-card" },
+    { id: "masterList", title: "View shopping list", sub: "Everything to buy in one place", icon: ListChecks, tone: "bg-card" },
+  ];
 
   return (
-    <div className="space-y-10 px-6 pt-16">
+    <div className="px-6 pt-16">
       <header>
-        <p className="text-sm text-muted-foreground">{greet}, {firstName}</p>
+        <p className="text-sm text-muted-foreground">Hi {firstName},</p>
         <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-tight">
-          What's on the list?
+          What do you want to do today?
         </h1>
       </header>
 
-      <button
-        onClick={onOpenDeals}
-        className="flex w-full items-center justify-between rounded-3xl bg-deal-soft px-6 py-7 text-left transition active:scale-[0.99]"
-      >
-        <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-deal">Today</p>
-          <p className="mt-2 text-[26px] font-semibold leading-tight text-foreground">
-            {dealsCount} {dealsCount === 1 ? "item" : "items"} on offer
-          </p>
-          <p className="mt-1.5 text-sm text-muted-foreground">Tap to see all deals</p>
-        </div>
-        <Flame className="h-7 w-7 text-deal" />
-      </button>
-
-      <section>
-        <h2 className="mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-          Quick access
-        </h2>
-        <div className="rounded-3xl bg-card">
-          <RowButton
-            onClick={onOpenMaster}
-            left={<ListChecks className="h-5 w-5 text-primary" />}
-            title="All items"
-            sub={`${items.filter((i) => !i.checked).length} to buy`}
-          />
-          <Divider />
-          {STORES.map((s, i) => {
-            const count = items.filter((it) => !it.checked && (it.preferredStore === s.id || (!it.isLocked && it.preferredStore !== "any"))).length;
-            return (
-              <div key={s.id}>
-                <RowButton
-                  onClick={() => onOpenStore(s.id)}
-                  left={<StoreDot color={s.color} />}
-                  title={s.name}
-                  sub={`${count} items`}
-                />
-                {i < STORES.length - 1 && <Divider />}
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {activity.length > 0 && (
-        <section>
-          <h2 className="mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-            Recent activity
-          </h2>
-          <div className="space-y-1.5">
-            {activity.slice(0, 4).map((a) => (
-              <div key={a.id} className="rounded-2xl bg-card px-5 py-4 text-sm">
-                <p className="text-foreground">{a.text}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {formatDistanceToNow(a.at, { addSuffix: true })}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      <div className="mt-8 space-y-3">
+        {actions.map((a) => (
+          <button
+            key={a.id}
+            onClick={() => go({ name: a.id } as Screen)}
+            className={`flex w-full items-center justify-between rounded-3xl px-6 py-6 text-left transition active:scale-[0.99] ${a.tone}`}
+          >
+            <div className="min-w-0 pr-3">
+              <p className="text-[19px] font-semibold leading-tight">{a.title}</p>
+              <p className={`mt-1 text-sm ${a.tone.includes("primary-foreground") ? "opacity-80" : "text-muted-foreground"}`}>
+                {a.sub}
+              </p>
+            </div>
+            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
+              a.tone.includes("primary-foreground") ? "bg-primary-foreground/15" : "bg-secondary"
+            }`}>
+              <a.icon className="h-5 w-5" />
+            </div>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
 
+/* ---------- GO SHOPPING ---------- */
 
-/* ---------- LISTS (master + store) ---------- */
-
-function ListsView({
-  activeStore,
-  setActiveStore,
-  onEditDeal,
-}: {
-  activeStore: Exclude<StoreId, "any"> | null;
-  setActiveStore: (s: Exclude<StoreId, "any"> | null) => void;
-  onEditDeal: (it: Item) => void;
-}) {
+function GoShoppingScreen({ go }: { go: (s: Screen) => void }) {
+  const { profile } = useAuth();
+  const { shops } = useUserShops(profile?.household_id);
   const items = useShop((s) => s.items);
 
-  if (!activeStore) {
-    const visible = items.filter((i) => !i.checked);
-    return (
-      <div className="px-6 pt-14">
-        <h1 className="text-3xl font-semibold tracking-tight">Master list</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{visible.length} items to buy</p>
+  return (
+    <div className="px-6 pt-14">
+      <BackHeader go={go} />
+      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Where are you shopping?</h1>
+      <p className="mt-1 text-sm text-muted-foreground">Tap a shop to see what to buy there.</p>
 
-        <div className="mt-5 flex gap-2 overflow-x-auto pb-2">
-          {STORES.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => setActiveStore(s.id)}
-              className="flex shrink-0 items-center gap-2 rounded-full bg-card px-4 py-2 text-sm font-medium"
-            >
-              <StoreDot color={s.color} />
-              {s.name}
+      <div className="mt-8 space-y-3">
+        {shops.length === 0 && (
+          <div className="rounded-3xl bg-card px-5 py-10 text-center text-sm text-muted-foreground">
+            No shops yet.{" "}
+            <button onClick={() => go({ name: "manageShops" })} className="font-medium text-primary">
+              Add one
             </button>
-          ))}
-        </div>
-
-        <div className="mt-4 space-y-1.5 pb-6">
-          {visible.length === 0 && <EmptyState text="Your list is empty. Tap + to add." />}
-          {visible.map((it) => (
-            <ItemRow key={it.id} item={it} viewingStore={null} onEditDeal={onEditDeal} />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  const store = STORES.find((s) => s.id === activeStore)!;
-  const { preferredHere, anyStore, canBuyHere } = itemsForStore(items, activeStore);
-
-  return (
-    <div className="px-6 pt-14">
-      <button
-        onClick={() => setActiveStore(null)}
-        className="mb-3 flex items-center gap-1 text-sm text-muted-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" /> All lists
-      </button>
-      <div className="flex items-center gap-3">
-        <StoreDot color={store.color} large />
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">{store.name}</h1>
-          <p className="text-sm text-muted-foreground">
-            {preferredHere.length + anyStore.length + canBuyHere.length} items available
-          </p>
-        </div>
-      </div>
-
-      <Section title="⭐ Preferred here" items={preferredHere} viewingStore={activeStore} onEditDeal={onEditDeal} />
-      <Section title="Any store" items={anyStore} viewingStore={activeStore} onEditDeal={onEditDeal} />
-      <Section title="Can buy here" items={canBuyHere} viewingStore={activeStore} onEditDeal={onEditDeal} muted />
-    </div>
-  );
-}
-
-function Section({
-  title,
-  items,
-  viewingStore,
-  onEditDeal,
-  muted,
-}: {
-  title: string;
-  items: Item[];
-  viewingStore: Exclude<StoreId, "any"> | null;
-  onEditDeal: (it: Item) => void;
-  muted?: boolean;
-}) {
-  if (items.length === 0) return null;
-  return (
-    <section className="mt-6">
-      <h2 className={`mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] ${muted ? "text-muted-foreground" : "text-foreground"}`}>
-        {title}
-      </h2>
-      <div className="space-y-2">
-        {items.map((it) => (
-          <ItemRow key={it.id} item={it} viewingStore={viewingStore} onEditDeal={onEditDeal} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ---------- FAVORITES ---------- */
-
-function FavoritesView() {
-  const items = useShop((s) => s.items);
-  const favs = items.filter((i) => i.favorite);
-  const quickAdd = useShop((s) => s.quickAddFromFavorite);
-  return (
-    <div className="px-6 pt-14">
-      <h1 className="text-3xl font-semibold tracking-tight">Favourites</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Tap to add back to your list</p>
-      <div className="mt-6 space-y-1.5 pb-6">
-        {favs.length === 0 && <EmptyState text="Star items to save them here." />}
-        {favs.map((it) => (
-          <div key={it.id} className="flex items-center justify-between rounded-2xl bg-card px-4 py-3">
-            <div className="flex items-center gap-3">
-              <Star className="h-4 w-4 fill-favorite text-favorite" />
-              <div>
-                <p className="font-medium text-foreground">{it.name}</p>
-                <p className="text-xs text-muted-foreground">{storeName(it.preferredStore)}</p>
-              </div>
-            </div>
-            {it.checked ? (
-              <button
-                onClick={() => {
-                  quickAdd(it.id);
-                  toast.success(`Added ${it.name}`);
-                }}
-                className="rounded-full bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground"
-              >
-                Add
-              </button>
-            ) : (
-              <span className="text-xs text-muted-foreground">On list</span>
-            )}
+            .
           </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ---------- DEALS ---------- */
-
-function DealsView({ onOpenStore }: { onOpenStore: (s: Exclude<StoreId, "any">) => void }) {
-  const items = useShop((s) => s.items);
-  const withDeals = items
-    .filter((i) => activeDeal(i))
-    .sort((a, b) => new Date(a.deal!.expiry).getTime() - new Date(b.deal!.expiry).getTime());
-
-  // best store today
-  const counts = new Map<Exclude<StoreId, "any">, number>();
-  withDeals.forEach((it) => {
-    const s = it.deal!.store;
-    counts.set(s, (counts.get(s) ?? 0) + 1);
-  });
-  const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
-
-  return (
-    <div className="px-6 pt-14">
-      <h1 className="text-3xl font-semibold tracking-tight">Deals</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Active offers across your list</p>
-
-      {best && (
-        <button
-          onClick={() => onOpenStore(best[0])}
-          className="mt-5 flex w-full items-center justify-between rounded-3xl bg-deal p-5 text-left text-deal-foreground transition active:scale-[0.99]"
-        >
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide opacity-80">Best store today</p>
-            <p className="mt-1 text-2xl font-semibold">{storeName(best[0])}</p>
-            <p className="mt-1 text-sm opacity-90">{best[1]} of your items on offer</p>
-          </div>
-          <ChevronRight className="h-6 w-6" />
-        </button>
-      )}
-
-      <div className="mt-6 space-y-1.5 pb-6">
-        {withDeals.length === 0 && <EmptyState text="No active deals. Add one from any item." />}
-        {withDeals.map((it) => {
-          const d = it.deal!;
-          const days = Math.ceil((new Date(d.expiry).getTime() - Date.now()) / 86400000);
-          const soon = days <= 2;
+        )}
+        {shops.map((id) => {
+          const store = STORES.find((s) => s.id === id)!;
+          const visible = items.filter((it) => !it.checked && (it.preferredStore === id || (!it.isLocked && it.preferredStore !== "any") || it.preferredStore === "any"));
+          const deals = visible.filter((it) => activeDeal(it) && activeDeal(it)!.store === id).length;
           return (
-            <div key={it.id} className="flex items-center justify-between rounded-2xl bg-card px-4 py-3">
-              <div className="min-w-0">
-                <p className="truncate font-medium">{it.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {storeName(d.store)}
-                  {d.price ? ` · £${d.price.toFixed(2)}` : ""}
+            <button
+              key={id}
+              onClick={() => go({ name: "store", storeId: id })}
+              className="flex w-full items-center gap-4 rounded-3xl bg-card px-5 py-6 text-left transition active:scale-[0.99]"
+            >
+              <span className="h-14 w-14 shrink-0 rounded-2xl" style={{ backgroundColor: store.color }} />
+              <div className="min-w-0 flex-1">
+                <p className="text-[19px] font-semibold leading-tight">{store.name}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {visible.length} {visible.length === 1 ? "item" : "items"}
+                  {deals > 0 && <span className="text-deal"> · 🔥 {deals} on offer</span>}
                 </p>
               </div>
-              <div className="ml-3 flex flex-col items-end">
-                <span className={`flex items-center gap-1 text-xs font-medium ${soon ? "text-deal" : "text-muted-foreground"}`}>
-                  <Flame className="h-3 w-3" />
-                  {days <= 0 ? "today" : `${days}d left`}
-                </span>
-                <span className="text-[10px] text-muted-foreground">{format(new Date(d.expiry), "d MMM")}</span>
-              </div>
-            </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </button>
           );
         })}
       </div>
@@ -484,78 +188,424 @@ function DealsView({ onOpenStore }: { onOpenStore: (s: Exclude<StoreId, "any">) 
   );
 }
 
-/* ---------- MORE ---------- */
+/* ---------- STORE ---------- */
 
-function MoreView() {
-  const clear = useShop((s) => s.clearChecked);
+function StoreScreen({
+  storeId,
+  go,
+  onEditDeal,
+}: {
+  storeId: Exclude<StoreId, "any">;
+  go: (s: Screen) => void;
+  onEditDeal: (it: Item) => void;
+}) {
   const items = useShop((s) => s.items);
-  const activity = useShop((s) => s.activity);
-  const resetStore = useShop((s) => s.reset);
-  const { profile, user, signOut } = useAuth();
-  const [householdName, setHouseholdName] = useState<string>("");
+  const store = STORES.find((s) => s.id === storeId)!;
 
-  useEffect(() => {
-    if (!profile?.household_id) return;
-    let active = true;
-    import("@/integrations/supabase/client").then(({ supabase }) =>
-      supabase
-        .from("households")
-        .select("name")
-        .eq("id", profile.household_id)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (active && data?.name) setHouseholdName(data.name);
-        }),
-    );
-    return () => {
-      active = false;
-    };
-  }, [profile?.household_id]);
+  const visible = items.filter((it) => !it.checked).filter((it) => {
+    if (it.isLocked) return it.preferredStore === storeId;
+    return true;
+  });
+
+  const preferredHere = visible.filter((it) => it.preferredStore === storeId);
+  const dealsHere = visible.filter((it) => {
+    const d = activeDeal(it);
+    return d && d.store === storeId && it.preferredStore !== storeId;
+  });
+  const otherIds = new Set([...preferredHere, ...dealsHere].map((i) => i.id));
+  const other = visible.filter((it) => !otherIds.has(it.id));
+
+  const dealsCount = visible.filter((it) => activeDeal(it)?.store === storeId).length;
 
   return (
     <div className="px-6 pt-14">
-      <h1 className="text-3xl font-semibold tracking-tight">More</h1>
-      <div className="mt-5 rounded-3xl bg-card p-5">
-        <p className="text-sm text-muted-foreground">Signed in as</p>
-        <p className="mt-1 font-medium">{profile?.name || user?.email}</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          {householdName || "Your household"}
-        </p>
-      </div>
-      <div className="mt-3 rounded-3xl bg-card p-5">
-        <p className="text-sm text-muted-foreground">Stats</p>
-        <div className="mt-2 grid grid-cols-2 gap-3">
-          <Stat label="Items" value={items.length} />
-          <Stat label="Checked" value={items.filter((i) => i.checked).length} />
+      <BackHeader go={go} to={{ name: "goShopping" }} label="Shops" />
+      <div className="mt-3 flex items-center gap-4">
+        <span className="h-14 w-14 shrink-0 rounded-2xl" style={{ backgroundColor: store.color }} />
+        <div className="min-w-0">
+          <h1 className="text-[28px] font-semibold tracking-tight">{store.name}</h1>
+          <p className="text-sm text-muted-foreground">{visible.length} items available</p>
         </div>
+      </div>
+
+      {dealsCount > 0 && (
+        <div className="mt-5 rounded-2xl bg-deal-soft px-5 py-4 text-sm text-deal">
+          🔥 {dealsCount} {dealsCount === 1 ? "item" : "items"} on offer here today
+        </div>
+      )}
+
+      <StoreSection title="⭐ Preferred here" items={preferredHere} storeId={storeId} onEditDeal={onEditDeal} />
+      <StoreSection title="🔥 Deals in this store" items={dealsHere} storeId={storeId} onEditDeal={onEditDeal} />
+      <StoreSection title="Other available items" items={other} storeId={storeId} onEditDeal={onEditDeal} muted />
+
+      {visible.length === 0 && (
+        <div className="mt-8 rounded-3xl bg-card px-5 py-10 text-center text-sm text-muted-foreground">
+          Nothing on your list for {store.name}.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StoreSection({
+  title,
+  items,
+  storeId,
+  onEditDeal,
+  muted,
+}: {
+  title: string;
+  items: Item[];
+  storeId: Exclude<StoreId, "any">;
+  onEditDeal: (it: Item) => void;
+  muted?: boolean;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <section className="mt-7">
+      <h2 className={`mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] ${muted ? "text-muted-foreground" : "text-foreground"}`}>
+        {title}
+      </h2>
+      <div className="space-y-2">
+        {items.map((it) => (
+          <ItemRow key={it.id} item={it} viewingStore={storeId} onEditDeal={onEditDeal} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ---------- ADD ITEM (quick add w/ favourite suggestions) ---------- */
+
+function AddItemScreen({ go }: { go: (s: Screen) => void }) {
+  const items = useShop((s) => s.items);
+  const addItem = useShop((s) => s.addItem);
+  const [name, setName] = useState("");
+
+  const favourites = useMemo(() => items.filter((i) => i.favorite), [items]);
+  const onListNames = new Set(items.filter((i) => !i.checked).map((i) => i.name.toLowerCase()));
+
+  const suggestions = useMemo(() => {
+    const q = name.trim().toLowerCase();
+    const pool = favourites.filter((f) => !onListNames.has(f.name.toLowerCase()));
+    if (!q) return pool.slice(0, 8);
+    return pool.filter((f) => f.name.toLowerCase().includes(q)).slice(0, 8);
+  }, [favourites, name, onListNames]);
+
+  const addFromFavourite = async (fav: Item) => {
+    await addItem({
+      name: fav.name,
+      preferredStore: fav.preferredStore,
+      isLocked: fav.isLocked,
+      notes: fav.notes,
+      favorite: false,
+    });
+    toast.success(`Added ${fav.name}`);
+    setName("");
+  };
+
+  const addTyped = async () => {
+    const v = name.trim();
+    if (!v) return;
+    await addItem({ name: v, preferredStore: "any", isLocked: false });
+    toast.success(`Added ${v}`);
+    setName("");
+  };
+
+  return (
+    <div className="px-6 pt-14">
+      <BackHeader go={go} />
+      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Add to list</h1>
+      <p className="mt-1 text-sm text-muted-foreground">Start typing — tap a suggestion to add instantly.</p>
+
+      <div className="mt-6 flex gap-2">
+        <input
+          autoFocus
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addTyped()}
+          placeholder="e.g. Bananas"
+          className="flex-1 rounded-2xl bg-secondary px-4 py-3.5 text-base outline-none focus:ring-2 focus:ring-ring"
+        />
         <button
-          onClick={() => {
-            clear();
-            toast.success("Cleared checked items");
-          }}
-          className="mt-4 w-full rounded-full bg-secondary py-2.5 text-sm font-medium text-secondary-foreground"
+          onClick={addTyped}
+          disabled={!name.trim()}
+          className="rounded-2xl bg-primary px-5 text-sm font-medium text-primary-foreground disabled:opacity-40"
         >
-          Clear checked items
+          Add
         </button>
       </div>
 
-      <button
-        onClick={async () => {
-          await signOut();
-          resetStore();
-        }}
-        className="mt-3 w-full rounded-full bg-secondary py-3 text-sm font-medium text-secondary-foreground"
-      >
-        Sign out
-      </button>
+      <h2 className="mt-8 mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+        From your favourites
+      </h2>
+      <div className="space-y-2 pb-6">
+        {suggestions.length === 0 && (
+          <div className="rounded-3xl bg-card px-5 py-8 text-center text-sm text-muted-foreground">
+            {favourites.length === 0 ? (
+              <>
+                No favourites yet.{" "}
+                <button onClick={() => go({ name: "favourites" })} className="font-medium text-primary">
+                  Add one
+                </button>
+                .
+              </>
+            ) : (
+              "Nothing matches."
+            )}
+          </div>
+        )}
+        {suggestions.map((f) => (
+          <button
+            key={f.id}
+            onClick={() => addFromFavourite(f)}
+            className="flex w-full items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
+          >
+            <Star className="h-4 w-4 fill-favorite text-favorite" />
+            <div className="min-w-0 flex-1">
+              <p className="font-medium">{f.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {storeName(f.preferredStore)} {f.isLocked && "· 🔒"}
+              </p>
+            </div>
+            <Plus className="h-4 w-4 text-muted-foreground" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
-      {activity.length > 0 && (
-        <div className="mt-5">
-          <h2 className="mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-            Activity feed
+/* ---------- FAVOURITES ---------- */
+
+function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
+  const { profile } = useAuth();
+  const { shops } = useUserShops(profile?.household_id);
+  const items = useShop((s) => s.items);
+  const addItem = useShop((s) => s.addItem);
+  const toggleFav = useShop((s) => s.toggleFav);
+  const removeItem = useShop((s) => s.removeItem);
+  const favs = items.filter((i) => i.favorite);
+
+  const [name, setName] = useState("");
+  const [store, setStore] = useState<StoreId>("any");
+  const [locked, setLocked] = useState(false);
+
+  const submit = async () => {
+    const v = name.trim();
+    if (!v) return;
+    await addItem({
+      name: v,
+      preferredStore: store,
+      isLocked: locked && store !== "any",
+      favorite: true,
+    });
+    toast.success(`Saved ${v} as favourite`);
+    setName("");
+    setStore("any");
+    setLocked(false);
+  };
+
+  return (
+    <div className="px-6 pt-14">
+      <BackHeader go={go} />
+      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Favourites</h1>
+      <p className="mt-1 text-sm text-muted-foreground">Save items you buy often — they'll suggest as you type.</p>
+
+      <div className="mt-6 space-y-3 rounded-3xl bg-card p-5">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && submit()}
+          placeholder="e.g. Semi-skimmed milk"
+          className="w-full rounded-2xl bg-secondary px-4 py-3 text-base outline-none focus:ring-2 focus:ring-ring"
+        />
+
+        <div className="flex flex-wrap gap-2">
+          <ChoiceChip selected={store === "any"} onClick={() => setStore("any")}>Any store</ChoiceChip>
+          {shops.map((id) => {
+            const s = STORES.find((x) => x.id === id)!;
+            return (
+              <ChoiceChip key={id} selected={store === id} onClick={() => setStore(id)}>
+                {s.name}
+              </ChoiceChip>
+            );
+          })}
+        </div>
+
+        <button
+          onClick={() => setLocked((v) => !v)}
+          disabled={store === "any"}
+          className="flex w-full items-center justify-between rounded-2xl bg-secondary px-4 py-3 disabled:opacity-50"
+        >
+          <div className="flex items-center gap-2 text-sm">
+            {locked ? <Lock className="h-4 w-4" /> : <span className="text-xs text-muted-foreground">Flexible</span>}
+            {locked ? `Locked to ${storeName(store)}` : "Tap to lock to store"}
+          </div>
+          <div className={`h-6 w-10 rounded-full p-0.5 transition ${locked ? "bg-primary" : "bg-border"}`}>
+            <div className={`h-5 w-5 rounded-full bg-background transition ${locked ? "translate-x-4" : ""}`} />
+          </div>
+        </button>
+
+        <button
+          onClick={submit}
+          disabled={!name.trim()}
+          className="w-full rounded-full bg-primary py-3 text-sm font-medium text-primary-foreground disabled:opacity-40"
+        >
+          Save favourite
+        </button>
+      </div>
+
+      <h2 className="mt-8 mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+        Your favourites
+      </h2>
+      <div className="space-y-2 pb-6">
+        {favs.length === 0 && (
+          <div className="rounded-3xl bg-card px-5 py-8 text-center text-sm text-muted-foreground">
+            No favourites yet.
+          </div>
+        )}
+        {favs.map((f) => (
+          <div key={f.id} className="flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5">
+            <Star className="h-4 w-4 fill-favorite text-favorite" />
+            <div className="min-w-0 flex-1">
+              <p className="font-medium">{f.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {storeName(f.preferredStore)} {f.isLocked && "· 🔒"}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                toggleFav(f.id);
+                if (f.checked) removeItem(f.id);
+                toast.success("Removed from favourites");
+              }}
+              aria-label="Remove favourite"
+              className="rounded-full p-2 text-muted-foreground"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- MANAGE SHOPS ---------- */
+
+function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
+  const { profile } = useAuth();
+  const { shops, add, remove, move } = useUserShops(profile?.household_id);
+  const available = STORES.filter((s) => !shops.includes(s.id));
+
+  return (
+    <div className="px-6 pt-14">
+      <BackHeader go={go} />
+      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Manage shops</h1>
+      <p className="mt-1 text-sm text-muted-foreground">Reorder or add stores you shop at.</p>
+
+      <h2 className="mt-7 mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+        Your shops
+      </h2>
+      <div className="space-y-2">
+        {shops.map((id, i) => {
+          const s = STORES.find((x) => x.id === id)!;
+          return (
+            <div key={id} className="flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5">
+              <span className="h-9 w-9 shrink-0 rounded-xl" style={{ backgroundColor: s.color }} />
+              <p className="min-w-0 flex-1 font-medium">{s.name}</p>
+              <button
+                onClick={() => move(id, -1)}
+                disabled={i === 0}
+                className="rounded-full p-2 text-muted-foreground disabled:opacity-30"
+                aria-label="Move up"
+              >
+                <ArrowUp className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => move(id, 1)}
+                disabled={i === shops.length - 1}
+                className="rounded-full p-2 text-muted-foreground disabled:opacity-30"
+                aria-label="Move down"
+              >
+                <ArrowDown className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => remove(id)}
+                className="rounded-full p-2 text-muted-foreground"
+                aria-label="Remove shop"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {available.length > 0 && (
+        <>
+          <h2 className="mt-7 mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+            Add a shop
+          </h2>
+          <div className="space-y-2 pb-6">
+            {available.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => add(s.id)}
+                className="flex w-full items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
+              >
+                <span className="h-9 w-9 shrink-0 rounded-xl" style={{ backgroundColor: s.color }} />
+                <p className="min-w-0 flex-1 font-medium">{s.name}</p>
+                <Plus className="h-4 w-4 text-muted-foreground" />
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ---------- MASTER LIST ---------- */
+
+function MasterListScreen({ go, onEditDeal }: { go: (s: Screen) => void; onEditDeal: (it: Item) => void }) {
+  const items = useShop((s) => s.items);
+  const visible = items.filter((i) => !i.checked);
+  const recent = useShop((s) => s.activity).slice(0, 3);
+
+  return (
+    <div className="px-6 pt-14">
+      <BackHeader go={go} />
+      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Shopping list</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {visible.length} {visible.length === 1 ? "item" : "items"} to buy
+      </p>
+
+      <div className="mt-6 space-y-2">
+        {visible.length === 0 && (
+          <div className="rounded-3xl bg-card px-5 py-10 text-center">
+            <p className="text-sm text-muted-foreground">Your list is empty.</p>
+            <button
+              onClick={() => go({ name: "addItem" })}
+              className="mt-4 rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground"
+            >
+              Add your first item
+            </button>
+          </div>
+        )}
+        {visible.map((it) => (
+          <ItemRow key={it.id} item={it} viewingStore={null} onEditDeal={onEditDeal} />
+        ))}
+      </div>
+
+      {recent.length > 0 && (
+        <>
+          <h2 className="mt-8 mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+            Recent activity
           </h2>
           <div className="space-y-1.5 pb-6">
-            {activity.map((a) => (
+            {recent.map((a) => (
               <div key={a.id} className="rounded-2xl bg-card px-4 py-3 text-sm">
                 <p>{a.text}</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
@@ -564,17 +614,8 @@ function MoreView() {
               </div>
             ))}
           </div>
-        </div>
+        </>
       )}
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-2xl bg-secondary px-4 py-3">
-      <p className="text-2xl font-semibold">{value}</p>
-      <p className="text-xs text-muted-foreground">{label}</p>
     </div>
   );
 }
@@ -592,18 +633,13 @@ function ItemRow({
 }) {
   const toggleCheck = useShop((s) => s.toggleCheck);
   const removeItem = useShop((s) => s.removeItem);
-  const toggleFav = useShop((s) => s.toggleFav);
 
   const deal = activeDeal(item);
   const dealHere = deal && viewingStore && deal.store === viewingStore;
   const dealElsewhere = deal && viewingStore && deal.store !== viewingStore;
 
   return (
-    <div
-      className={`group flex items-center gap-4 rounded-2xl px-4 py-4 transition ${
-        dealHere ? "bg-deal-soft" : "bg-card"
-      }`}
-    >
+    <div className={`flex items-center gap-4 rounded-2xl px-4 py-4 transition ${dealHere ? "bg-deal-soft" : "bg-card"}`}>
       <button
         onClick={() => {
           toggleCheck(item.id);
@@ -622,147 +658,26 @@ function ItemRow({
         {item.checked && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
       </button>
 
-      <button
-        onClick={() => onEditDeal(item)}
-        className="min-w-0 flex-1 text-left"
-        aria-label="Edit deal"
-      >
+      <button onClick={() => onEditDeal(item)} className="min-w-0 flex-1 text-left" aria-label="Edit deal">
         <div className="flex items-center gap-1.5">
+          {item.favorite && <Star className="h-3 w-3 fill-favorite text-favorite" />}
           <p className={`truncate text-[15px] font-medium ${item.checked ? "text-muted-foreground line-through" : ""}`}>
             {item.name}
           </p>
           {item.isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
         </div>
         <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-          {item.preferredStore !== "any" ? (
-            <span>{storeName(item.preferredStore)}</span>
-          ) : (
-            <span>Any store</span>
-          )}
-          {dealElsewhere && (
-            <span className="text-deal">· Cheaper at {storeName(deal!.store)}</span>
-          )}
+          <span>{item.preferredStore !== "any" ? storeName(item.preferredStore) : "Any store"}</span>
+          {dealElsewhere && <span className="text-deal">· Cheaper at {storeName(deal!.store)}</span>}
           {dealHere && (
-            <span className="font-medium text-deal">· On offer{deal!.price ? ` £${deal!.price.toFixed(2)}` : ""}</span>
+            <span className="font-medium text-deal">
+              · 🔥 On offer{deal!.price ? ` £${deal!.price.toFixed(2)}` : ""}
+            </span>
           )}
-          {deal && !viewingStore && <span className="text-deal">· On offer</span>}
+          {deal && !viewingStore && <span className="text-deal">· 🔥 On offer</span>}
         </div>
       </button>
-
-      <button
-        onClick={() => toggleFav(item.id)}
-        aria-label="Favourite"
-        className="p-1 text-muted-foreground"
-      >
-        <Star className={`h-4 w-4 ${item.favorite ? "fill-favorite text-favorite" : ""}`} />
-      </button>
     </div>
-  );
-}
-
-
-/* ---------- ADD ITEM SHEET ---------- */
-
-function AddItemSheet({
-  onClose,
-  onAdded,
-  initial,
-}: {
-  onClose: () => void;
-  onAdded?: () => void;
-  initial?: { store?: StoreId; favorite?: boolean; locked?: boolean };
-}) {
-  const addItem = useShop((s) => s.addItem);
-  const [name, setName] = useState("");
-  const [store, setStore] = useState<StoreId>(initial?.store ?? "any");
-  const [locked, setLocked] = useState(!!initial?.locked);
-  const [favorite, setFavorite] = useState(!!initial?.favorite);
-  const [notes, setNotes] = useState("");
-
-  const submit = async () => {
-    if (!name.trim()) return;
-    await addItem({
-      name,
-      preferredStore: store,
-      isLocked: locked && store !== "any",
-      notes,
-      favorite,
-    });
-    toast.success(`Added ${name.trim()}`);
-    onAdded?.();
-    onClose();
-  };
-
-  return (
-    <Sheet onClose={onClose} title="Add item">
-      <div className="space-y-5">
-        <Field label="Item">
-          <input
-            autoFocus
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Bananas"
-            className="w-full rounded-2xl bg-secondary px-4 py-3 text-base outline-none focus:ring-2 focus:ring-ring"
-          />
-        </Field>
-
-        <Field label="Store preference">
-          <div className="grid grid-cols-3 gap-2">
-            <ChoiceChip selected={store === "any"} onClick={() => setStore("any")}>Any</ChoiceChip>
-            {STORES.map((s) => (
-              <ChoiceChip key={s.id} selected={store === s.id} onClick={() => setStore(s.id)}>
-                {s.name}
-              </ChoiceChip>
-            ))}
-          </div>
-        </Field>
-
-        {store !== "any" && (
-          <button
-            onClick={() => setLocked((v) => !v)}
-            className="flex w-full items-center justify-between rounded-2xl bg-secondary px-4 py-3"
-          >
-            <div className="flex items-center gap-2 text-sm">
-              <Lock className="h-4 w-4" />
-              Lock to {storeName(store)} only
-            </div>
-            <div className={`h-6 w-10 rounded-full p-0.5 transition ${locked ? "bg-primary" : "bg-border"}`}>
-              <div className={`h-5 w-5 rounded-full bg-background transition ${locked ? "translate-x-4" : ""}`} />
-            </div>
-          </button>
-        )}
-
-        <button
-          onClick={() => setFavorite((v) => !v)}
-          className="flex w-full items-center justify-between rounded-2xl bg-secondary px-4 py-3"
-        >
-          <div className="flex items-center gap-2 text-sm">
-            <Star className={`h-4 w-4 ${favorite ? "fill-favorite text-favorite" : ""}`} />
-            Save as favourite
-          </div>
-          <div className={`h-6 w-10 rounded-full p-0.5 transition ${favorite ? "bg-primary" : "bg-border"}`}>
-            <div className={`h-5 w-5 rounded-full bg-background transition ${favorite ? "translate-x-4" : ""}`} />
-          </div>
-        </button>
-
-        <Field label="Notes (optional)">
-          <input
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Brand, size…"
-            className="w-full rounded-2xl bg-secondary px-4 py-3 text-base outline-none focus:ring-2 focus:ring-ring"
-          />
-        </Field>
-
-        <button
-          onClick={submit}
-          disabled={!name.trim()}
-          className="w-full rounded-full bg-primary py-3.5 text-base font-medium text-primary-foreground shadow-soft disabled:opacity-50"
-        >
-          Add to list
-        </button>
-      </div>
-    </Sheet>
   );
 }
 
@@ -770,13 +685,17 @@ function AddItemSheet({
 
 function DealSheet({ item, onClose }: { item: Item; onClose: () => void }) {
   const setDeal = useShop((s) => s.setDeal);
+  const { profile } = useAuth();
+  const { shops } = useUserShops(profile?.household_id);
   const existing = item.deal;
+  const fallback = (shops[0] ?? "tesco") as Exclude<StoreId, "any">;
   const [store, setStore] = useState<Exclude<StoreId, "any">>(
-    (existing?.store as Exclude<StoreId, "any">) ?? (item.preferredStore !== "any" ? (item.preferredStore as Exclude<StoreId, "any">) : "tesco")
+    (existing?.store as Exclude<StoreId, "any">) ??
+      (item.preferredStore !== "any" ? (item.preferredStore as Exclude<StoreId, "any">) : fallback),
   );
   const [price, setPrice] = useState(existing?.price?.toString() ?? "");
   const [expiry, setExpiry] = useState(
-    existing?.expiry?.slice(0, 10) ?? new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)
+    existing?.expiry?.slice(0, 10) ?? new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
   );
 
   const submit = () => {
@@ -794,11 +713,14 @@ function DealSheet({ item, onClose }: { item: Item; onClose: () => void }) {
       <div className="space-y-5">
         <Field label="Store">
           <div className="grid grid-cols-2 gap-2">
-            {STORES.map((s) => (
-              <ChoiceChip key={s.id} selected={store === s.id} onClick={() => setStore(s.id)}>
-                {s.name}
-              </ChoiceChip>
-            ))}
+            {(shops.length ? shops : STORES.map((s) => s.id)).map((id) => {
+              const s = STORES.find((x) => x.id === id)!;
+              return (
+                <ChoiceChip key={id} selected={store === id} onClick={() => setStore(id)}>
+                  {s.name}
+                </ChoiceChip>
+              );
+            })}
           </div>
         </Field>
         <Field label="Price (£, optional)">
@@ -819,7 +741,6 @@ function DealSheet({ item, onClose }: { item: Item; onClose: () => void }) {
             className="w-full rounded-2xl bg-secondary px-4 py-3 outline-none focus:ring-2 focus:ring-ring"
           />
         </Field>
-
         <div className="flex gap-2">
           {existing && (
             <button
@@ -830,13 +751,10 @@ function DealSheet({ item, onClose }: { item: Item; onClose: () => void }) {
               }}
               className="flex-1 rounded-full bg-secondary py-3 text-sm font-medium text-secondary-foreground"
             >
-              <Trash2 className="mr-1 inline h-4 w-4" /> Remove
+              Remove
             </button>
           )}
-          <button
-            onClick={submit}
-            className="flex-1 rounded-full bg-primary py-3 text-sm font-medium text-primary-foreground"
-          >
+          <button onClick={submit} className="flex-1 rounded-full bg-primary py-3 text-sm font-medium text-primary-foreground">
             Save deal
           </button>
         </div>
@@ -845,7 +763,53 @@ function DealSheet({ item, onClose }: { item: Item; onClose: () => void }) {
   );
 }
 
+/* ---------- BOTTOM BAR ---------- */
+
+function BottomBar({ current, go }: { current: Screen; go: (s: Screen) => void }) {
+  const navItems: { id: Screen["name"]; label: string; icon: React.ComponentType<{ className?: string }>; screen: Screen }[] = [
+    { id: "home", label: "Home", icon: Home, screen: { name: "home" } },
+    { id: "goShopping", label: "Shop", icon: ShoppingBasket, screen: { name: "goShopping" } },
+    { id: "addItem", label: "Add", icon: Plus, screen: { name: "addItem" } },
+    { id: "masterList", label: "List", icon: ListChecks, screen: { name: "masterList" } },
+    { id: "manageShops", label: "Shops", icon: Settings2, screen: { name: "manageShops" } },
+  ];
+
+  return (
+    <nav className="fixed bottom-0 left-1/2 z-20 w-full max-w-md -translate-x-1/2 bg-background/90 px-2 pb-5 pt-2 backdrop-blur-xl">
+      <div className="flex items-center justify-around">
+        {navItems.map((it) => {
+          const active = current.name === it.id;
+          const Icon = it.icon;
+          return (
+            <button
+              key={it.id}
+              onClick={() => go(it.screen)}
+              className={`flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[10px] font-medium transition ${
+                active ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              <Icon className="h-5 w-5" />
+              {it.label}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
 /* ---------- PRIMITIVES ---------- */
+
+function BackHeader({ go, to, label }: { go: (s: Screen) => void; to?: Screen; label?: string }) {
+  return (
+    <button
+      onClick={() => go(to ?? { name: "home" })}
+      className="flex items-center gap-1 text-sm text-muted-foreground"
+    >
+      <ArrowLeft className="h-4 w-4" /> {label ?? "Home"}
+    </button>
+  );
+}
 
 function Sheet({ onClose, title, children }: { onClose: () => void; title: string; children: React.ReactNode }) {
   return (
@@ -878,15 +842,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function ChoiceChip({
-  selected,
-  onClick,
-  children,
-}: {
-  selected: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
+function ChoiceChip({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
       onClick={onClick}
@@ -899,80 +855,5 @@ function ChoiceChip({
   );
 }
 
-function RowButton({
-  onClick,
-  left,
-  title,
-  sub,
-}: {
-  onClick: () => void;
-  left: React.ReactNode;
-  title: string;
-  sub?: string;
-}) {
-  return (
-    <button onClick={onClick} className="flex w-full items-center gap-4 px-5 py-5 text-left">
-      <div className="flex h-9 w-9 items-center justify-center">{left}</div>
-      <div className="flex-1">
-        <p className="font-medium">{title}</p>
-        {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
-      </div>
-      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-    </button>
-  );
-}
-
-function Divider() {
-  return <div className="ml-[72px] h-px bg-border/60" />;
-}
-
-function StoreDot({ color, large }: { color: string; large?: boolean }) {
-  return (
-    <span
-      className={`inline-block rounded-full ${large ? "h-10 w-10" : "h-3 w-3"}`}
-      style={{ backgroundColor: color }}
-    />
-  );
-}
-
-function EmptyState({ text }: { text: string }) {
-  return (
-    <div className="rounded-3xl bg-card px-5 py-10 text-center">
-      <p className="text-sm text-muted-foreground">{text}</p>
-    </div>
-  );
-}
-
-/* ---------- BOTTOM NAV ---------- */
-
-function BottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
-  const items: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-    { id: "home", label: "Home", icon: Home },
-    { id: "favs", label: "Favourites", icon: Star },
-    { id: "lists", label: "Lists", icon: ListChecks },
-    { id: "deals", label: "Deals", icon: Flame },
-    { id: "more", label: "More", icon: MoreHorizontal },
-  ];
-  return (
-    <nav className="fixed bottom-0 left-1/2 z-20 w-full max-w-md -translate-x-1/2 bg-background/90 px-2 pb-5 pt-2 backdrop-blur-xl">
-      <div className="flex items-center justify-around">
-        {items.map((it) => {
-          const active = tab === it.id;
-          const Icon = it.icon;
-          return (
-            <button
-              key={it.id}
-              onClick={() => setTab(it.id)}
-              className={`flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[10px] font-medium transition ${
-                active ? "text-primary" : "text-muted-foreground"
-              }`}
-            >
-              <Icon className="h-5 w-5" />
-              {it.label}
-            </button>
-          );
-        })}
-      </div>
-    </nav>
-  );
-}
+/* Used by Deals/Flame icons indirectly */
+export { Flame };
