@@ -51,16 +51,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         await new Promise((r) => setTimeout(r, 250));
       }
-      // Failsafe: ask the DB to create the profile + household if it's still missing.
+      // Failsafe: if the signup trigger didn't fire, create household + profile ourselves.
       if (cancelled) return;
-      const { data: ensured, error } = await supabase.rpc("ensure_profile");
-      if (cancelled) return;
-      if (!error && ensured) {
-        const row = Array.isArray(ensured) ? ensured[0] : ensured;
-        if (row) {
-          setProfile({ id: row.id, name: row.name, household_id: row.household_id } as Profile);
-        }
-      }
+      const name =
+        (session.user.user_metadata?.name as string | undefined)?.trim() ||
+        session.user.email?.split("@")[0] ||
+        "You";
+      const { data: hh } = await supabase
+        .from("households")
+        .insert({ name: `${name}'s household` })
+        .select("id")
+        .single();
+      if (cancelled || !hh) return;
+      const { data: created } = await supabase
+        .from("profiles")
+        .insert({ id: session.user.id, name, household_id: hh.id })
+        .select("id, name, household_id")
+        .single();
+      if (cancelled || !created) return;
+      setProfile(created as Profile);
+
     })();
     return () => {
       cancelled = true;
