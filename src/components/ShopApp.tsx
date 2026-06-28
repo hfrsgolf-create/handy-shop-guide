@@ -11,7 +11,7 @@ import {
   X,
   ArrowLeft,
   Star,
-  Flame,
+  
   ShoppingBasket,
   ListChecks,
   Store as StoreIcon,
