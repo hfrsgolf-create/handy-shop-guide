@@ -1,14 +1,32 @@
 import { create } from "zustand";
 import { supabase } from "@/integrations/supabase/client";
 
-export type StoreId = "tesco" | "sainsburys" | "aldi" | "ms" | "any";
+export type StoreId =
+  | "tesco"
+  | "sainsburys"
+  | "aldi"
+  | "lidl"
+  | "ms"
+  | "waitrose"
+  | "morrisons"
+  | "coop"
+  | "iceland"
+  | "any";
 
 export const STORES: { id: Exclude<StoreId, "any">; name: string; color: string }[] = [
   { id: "tesco", name: "Tesco", color: "oklch(0.55 0.18 255)" },
   { id: "sainsburys", name: "Sainsbury's", color: "oklch(0.62 0.20 35)" },
   { id: "aldi", name: "Aldi", color: "oklch(0.55 0.16 230)" },
+  { id: "lidl", name: "Lidl", color: "oklch(0.62 0.20 25)" },
   { id: "ms", name: "M&S", color: "oklch(0.30 0.04 165)" },
+  { id: "waitrose", name: "Waitrose", color: "oklch(0.50 0.14 145)" },
+  { id: "morrisons", name: "Morrisons", color: "oklch(0.45 0.12 145)" },
+  { id: "coop", name: "Co-op", color: "oklch(0.55 0.16 255)" },
+  { id: "iceland", name: "Iceland", color: "oklch(0.55 0.18 25)" },
 ];
+
+export const DEFAULT_USER_SHOPS: Exclude<StoreId, "any">[] = ["tesco", "sainsburys", "aldi", "lidl"];
+
 
 export const storeName = (id: StoreId | null | undefined) =>
   id && id !== "any" ? STORES.find((s) => s.id === id)?.name ?? "Any store" : "Any store";
