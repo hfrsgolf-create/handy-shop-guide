@@ -855,5 +855,3 @@ function ChoiceChip({ selected, onClick, children }: { selected: boolean; onClic
   );
 }
 
-/* Used by Deals/Flame icons indirectly */
-export { Flame };
