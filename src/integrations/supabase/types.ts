@@ -154,21 +154,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      ensure_profile: {
-        Args: never
-        Returns: {
-          created_at: string
-          household_id: string
-          id: string
-          name: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "profiles"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
