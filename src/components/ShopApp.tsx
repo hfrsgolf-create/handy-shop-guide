@@ -45,20 +45,25 @@ export function ShopApp() {
   const { profile } = useAuth();
   const initStore = useShop((s) => s.init);
   const ready = useShop((s) => s.ready);
+  const initShops = useShops((s) => s.init);
+  const shopsReady = useShops((s) => s.ready);
   const [screen, setScreen] = useState<Screen>({ name: "home" });
   const [editingDealFor, setEditingDealFor] = useState<Item | null>(null);
   const [spinnerExpired, setSpinnerExpired] = useState(false);
 
   useEffect(() => {
-    if (profile) initStore(profile.household_id, profile.name);
-  }, [profile?.household_id, profile?.name, initStore]);
+    if (profile) {
+      initStore(profile.household_id, profile.name);
+      initShops(profile.household_id);
+    }
+  }, [profile?.household_id, profile?.name, initStore, initShops]);
 
   useEffect(() => {
     const t = setTimeout(() => setSpinnerExpired(true), 1500);
     return () => clearTimeout(t);
   }, []);
 
-  const loaded = !!profile && ready;
+  const loaded = !!profile && ready && shopsReady;
   if (!loaded && !spinnerExpired) {
     return (
       <div className="mx-auto flex min-h-dvh max-w-md items-center justify-center bg-background text-sm text-muted-foreground">
