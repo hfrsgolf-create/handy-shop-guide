@@ -168,8 +168,8 @@ function GoShoppingScreen({ go }: { go: (s: Screen) => void }) {
             .
           </div>
         )}
-        {shops.map((id) => {
-          const store = STORES.find((s) => s.id === id)!;
+        {shops.map((store) => {
+          const id = store.id;
           const visible = items.filter((it) => !it.checked && (it.preferredStore === id || (!it.isLocked && it.preferredStore !== "any") || it.preferredStore === "any"));
           const deals = visible.filter((it) => activeDeal(it) && activeDeal(it)!.store === id).length;
           return (
