@@ -84,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     profile,
     loading,
+    setProfile,
     async signIn(email, password, stay) {
       // "Stay logged in" controls whether the session persists across tabs/restart.
       if (typeof window !== "undefined") {
