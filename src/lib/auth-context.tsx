@@ -9,6 +9,7 @@ type AuthCtx = {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  setProfile: (p: Profile | null) => void;
   signIn: (email: string, password: string, stay: boolean) => Promise<{ error: string | null }>;
   signUp: (name: string, email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
