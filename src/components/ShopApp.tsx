@@ -207,7 +207,8 @@ function StoreScreen({
   onEditDeal: (it: Item) => void;
 }) {
   const items = useShop((s) => s.items);
-  const store = STORES.find((s) => s.id === storeId)!;
+  const shops = useShops((s) => s.shops);
+  const store = shops.find((s) => s.id === storeId) ?? { id: storeId, name: storeName(storeId), color: "#94a3b8" };
 
   const visible = items.filter((it) => !it.checked).filter((it) => {
     if (it.isLocked) return it.preferredStore === storeId;
