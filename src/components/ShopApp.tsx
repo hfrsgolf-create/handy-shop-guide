@@ -466,7 +466,7 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
           </div>
         )}
         {favs.map((f) => (
-          <div key={f.id} className="flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5">
+          <div key={f.id} className="flex items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5">
             <Star className="h-4 w-4 fill-favorite text-favorite" />
             <div className="min-w-0 flex-1">
               <p className="font-medium">{f.name}</p>
