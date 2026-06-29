@@ -35,7 +35,7 @@
   --color-deal-soft: var(--deal-soft);
   --color-favorite: var(--favorite);
   --color-success: var(--success);
-  --shadow-card: none;
+  --shadow-card: 0 1px 3px oklch(0.2 0.02 80 / 0.05);
   --shadow-soft: 0 8px 24px oklch(0.2 0.02 80 / 0.06);
 }
 
