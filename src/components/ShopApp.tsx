@@ -512,7 +512,7 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
         {shops.map((id, i) => {
           const s = STORES.find((x) => x.id === id)!;
           return (
-            <div key={id} className="flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5">
+            <div key={id} className="flex items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5">
               <span className="h-9 w-9 shrink-0 rounded-xl" style={{ backgroundColor: s.color }} />
               <p className="min-w-0 flex-1 font-medium">{s.name}</p>
               <button
@@ -553,7 +553,7 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
               <button
                 key={s.id}
                 onClick={() => add(s.id)}
-                className="flex w-full items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
+                className="flex w-full items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5 text-left transition active:scale-[0.99]"
               >
                 <span className="h-9 w-9 shrink-0 rounded-xl" style={{ backgroundColor: s.color }} />
                 <p className="min-w-0 flex-1 font-medium">{s.name}</p>
