@@ -584,7 +584,7 @@ function MasterListScreen({ go, onEditDeal }: { go: (s: Screen) => void; onEditD
 
       <div className="mt-6 space-y-2">
         {visible.length === 0 && (
-          <div className="rounded-3xl bg-card px-5 py-10 text-center">
+          <div className="rounded-3xl bg-card border border-border shadow-card px-5 py-10 text-center">
             <p className="text-sm text-muted-foreground">Your list is empty.</p>
             <button
               onClick={() => go({ name: "addItem" })}
@@ -606,7 +606,7 @@ function MasterListScreen({ go, onEditDeal }: { go: (s: Screen) => void; onEditD
           </h2>
           <div className="space-y-1.5 pb-6">
             {recent.map((a) => (
-              <div key={a.id} className="rounded-2xl bg-card px-4 py-3 text-sm">
+              <div key={a.id} className="rounded-2xl bg-card border border-border px-4 py-3 text-sm">
                 <p>{a.text}</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   {formatDistanceToNow(a.at, { addSuffix: true })}
