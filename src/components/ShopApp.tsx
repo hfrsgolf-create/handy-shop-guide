@@ -22,13 +22,15 @@ import {
 } from "lucide-react";
 import {
   useShop,
-  STORES,
   storeName,
   activeDeal,
   type Item,
   type StoreId,
 } from "@/lib/shop-store";
+import { useShops, FREE_SHOP_LIMIT, SHOP_COLOR_PRESETS, type Shop } from "@/lib/shops-store";
 import { useUserShops } from "@/lib/user-shops";
+import { supabase } from "@/integrations/supabase/client";
+import { Pencil, Sparkles } from "lucide-react";
 
 type Screen =
   | { name: "home" }
