@@ -639,7 +639,7 @@ function ItemRow({
   const dealElsewhere = deal && viewingStore && deal.store !== viewingStore;
 
   return (
-    <div className={`flex items-center gap-4 rounded-2xl px-4 py-4 transition ${dealHere ? "bg-deal-soft" : "bg-card"}`}>
+    <div className={`flex items-center gap-4 rounded-2xl border border-border px-4 py-4 transition ${dealHere ? "bg-deal-soft" : "bg-card"}`}>
       <button
         onClick={() => {
           toggleCheck(item.id);
