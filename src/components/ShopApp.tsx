@@ -929,14 +929,11 @@ function DealSheet({ item, onClose }: { item: Item; onClose: () => void }) {
       <div className="space-y-5">
         <Field label="Store">
           <div className="grid grid-cols-2 gap-2">
-            {(shops.length ? shops : STORES.map((s) => s.id)).map((id) => {
-              const s = STORES.find((x) => x.id === id)!;
-              return (
-                <ChoiceChip key={id} selected={store === id} onClick={() => setStore(id)}>
-                  {s.name}
-                </ChoiceChip>
-              );
-            })}
+            {shops.map((sh) => (
+              <ChoiceChip key={sh.id} selected={store === sh.id} onClick={() => setStore(sh.id)}>
+                {sh.name}
+              </ChoiceChip>
+            ))}
           </div>
         </Field>
         <Field label="Price (£, optional)">
