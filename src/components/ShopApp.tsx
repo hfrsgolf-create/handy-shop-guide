@@ -341,7 +341,7 @@ function AddItemScreen({ go }: { go: (s: Screen) => void }) {
       </h2>
       <div className="space-y-2 pb-6">
         {suggestions.length === 0 && (
-          <div className="rounded-3xl bg-card px-5 py-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-3xl bg-card border border-border px-5 py-8 text-center text-sm text-muted-foreground">
             {favourites.length === 0 ? (
               <>
                 No favourites yet.{" "}
@@ -359,7 +359,7 @@ function AddItemScreen({ go }: { go: (s: Screen) => void }) {
           <button
             key={f.id}
             onClick={() => addFromFavourite(f)}
-            className="flex w-full items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
+            className="flex w-full items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5 text-left transition active:scale-[0.99]"
           >
             <Star className="h-4 w-4 fill-favorite text-favorite" />
             <div className="min-w-0 flex-1">
