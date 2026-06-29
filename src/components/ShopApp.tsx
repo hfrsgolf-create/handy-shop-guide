@@ -431,14 +431,11 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
 
         <div className="flex flex-wrap gap-2">
           <ChoiceChip selected={store === "any"} onClick={() => setStore("any")}>Any store</ChoiceChip>
-          {shops.map((id) => {
-            const s = STORES.find((x) => x.id === id)!;
-            return (
-              <ChoiceChip key={id} selected={store === id} onClick={() => setStore(id)}>
-                {s.name}
-              </ChoiceChip>
-            );
-          })}
+          {shops.map((sh) => (
+            <ChoiceChip key={sh.id} selected={store === sh.id} onClick={() => setStore(sh.id)}>
+              {sh.name}
+            </ChoiceChip>
+          ))}
         </div>
 
         <button
