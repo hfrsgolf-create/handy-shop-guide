@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type Profile = { id: string; name: string; household_id: string };
+export type Profile = { id: string; name: string; household_id: string; is_premium?: boolean };
 
 type AuthCtx = {
   user: User | null;
