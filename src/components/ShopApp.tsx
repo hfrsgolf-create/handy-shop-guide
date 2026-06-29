@@ -904,7 +904,7 @@ function DealSheet({ item, onClose }: { item: Item; onClose: () => void }) {
   const { profile } = useAuth();
   const { shops } = useUserShops(profile?.household_id);
   const existing = item.deal;
-  const fallback = (shops[0] ?? "tesco") as Exclude<StoreId, "any">;
+  const fallback = (shops[0]?.id ?? "tesco") as Exclude<StoreId, "any">;
   const [store, setStore] = useState<Exclude<StoreId, "any">>(
     (existing?.store as Exclude<StoreId, "any">) ??
       (item.preferredStore !== "any" ? (item.preferredStore as Exclude<StoreId, "any">) : fallback),
