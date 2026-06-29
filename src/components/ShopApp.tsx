@@ -98,10 +98,10 @@ function HomeScreen({ go }: { go: (s: Screen) => void }) {
 
   const actions: { id: Screen["name"]; title: string; sub: string; icon: React.ComponentType<{ className?: string }>; tone: string }[] = [
     { id: "goShopping", title: "Go shopping", sub: "Pick a store and start ticking off", icon: ShoppingBasket, tone: "bg-primary text-primary-foreground" },
-    { id: "addItem", title: "Add to list", sub: "Type or pick from favourites", icon: Plus, tone: "bg-card" },
-    { id: "favourites", title: "Add favourites", sub: "Save items you buy often", icon: Star, tone: "bg-card" },
-    { id: "manageShops", title: "Manage shops", sub: "Reorder or add new stores", icon: StoreIcon, tone: "bg-card" },
-    { id: "masterList", title: "View shopping list", sub: "Everything to buy in one place", icon: ListChecks, tone: "bg-card" },
+    { id: "addItem", title: "Add to list", sub: "Type or pick from favourites", icon: Plus, tone: "bg-card border border-border shadow-card" },
+    { id: "favourites", title: "Add favourites", sub: "Save items you buy often", icon: Star, tone: "bg-card border border-border shadow-card" },
+    { id: "manageShops", title: "Manage shops", sub: "Reorder or add new stores", icon: StoreIcon, tone: "bg-card border border-border shadow-card" },
+    { id: "masterList", title: "View shopping list", sub: "Everything to buy in one place", icon: ListChecks, tone: "bg-card border border-border shadow-card" },
   ];
 
   return (
