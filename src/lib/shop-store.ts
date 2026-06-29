@@ -7,16 +7,6 @@ export type StoreId = string;
 
 export const storeName = (id: StoreId | null | undefined) => shopName(id);
 
-// Backward-compat: anything still referencing STORES gets the live household shops.
-export const STORES = {
-  get list() {
-    return useShops.getState().shops.map((s) => ({ id: s.id, name: s.name, color: s.color }));
-  },
-  find(pred: (s: { id: string; name: string; color: string }) => boolean) {
-    return this.list.find(pred);
-  },
-};
-
 export type Deal = {
   store: Exclude<StoreId, "any">;
   price?: number;
