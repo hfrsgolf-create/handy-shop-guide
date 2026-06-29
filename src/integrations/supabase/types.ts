@@ -125,23 +125,64 @@ export type Database = {
           created_at: string
           household_id: string
           id: string
+          is_premium: boolean
           name: string
         }
         Insert: {
           created_at?: string
           household_id: string
           id: string
+          is_premium?: boolean
           name?: string
         }
         Update: {
           created_at?: string
           household_id?: string
           id?: string
+          is_premium?: boolean
           name?: string
         }
         Relationships: [
           {
             foreignKeyName: "profiles_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shops: {
+        Row: {
+          color: string
+          created_at: string
+          household_id: string
+          id: string
+          is_default: boolean
+          name: string
+          order_index: number
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          household_id: string
+          id: string
+          is_default?: boolean
+          name: string
+          order_index?: number
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          household_id?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          order_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shops_household_id_fkey"
             columns: ["household_id"]
             isOneToOne: false
             referencedRelation: "households"
