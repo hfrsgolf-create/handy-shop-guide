@@ -98,10 +98,10 @@ function HomeScreen({ go }: { go: (s: Screen) => void }) {
 
   const actions: { id: Screen["name"]; title: string; sub: string; icon: React.ComponentType<{ className?: string }>; tone: string }[] = [
     { id: "goShopping", title: "Go shopping", sub: "Pick a store and start ticking off", icon: ShoppingBasket, tone: "bg-primary text-primary-foreground" },
-    { id: "addItem", title: "Add to list", sub: "Type or pick from favourites", icon: Plus, tone: "bg-card" },
-    { id: "favourites", title: "Add favourites", sub: "Save items you buy often", icon: Star, tone: "bg-card" },
-    { id: "manageShops", title: "Manage shops", sub: "Reorder or add new stores", icon: StoreIcon, tone: "bg-card" },
-    { id: "masterList", title: "View shopping list", sub: "Everything to buy in one place", icon: ListChecks, tone: "bg-card" },
+    { id: "addItem", title: "Add to list", sub: "Type or pick from favourites", icon: Plus, tone: "bg-card border border-border shadow-card" },
+    { id: "favourites", title: "Add favourites", sub: "Save items you buy often", icon: Star, tone: "bg-card border border-border shadow-card" },
+    { id: "manageShops", title: "Manage shops", sub: "Reorder or add new stores", icon: StoreIcon, tone: "bg-card border border-border shadow-card" },
+    { id: "masterList", title: "View shopping list", sub: "Everything to buy in one place", icon: ListChecks, tone: "bg-card border border-border shadow-card" },
   ];
 
   return (
@@ -153,7 +153,7 @@ function GoShoppingScreen({ go }: { go: (s: Screen) => void }) {
 
       <div className="mt-8 space-y-3">
         {shops.length === 0 && (
-          <div className="rounded-3xl bg-card px-5 py-10 text-center text-sm text-muted-foreground">
+          <div className="rounded-3xl bg-card border border-border px-5 py-10 text-center text-sm text-muted-foreground">
             No shops yet.{" "}
             <button onClick={() => go({ name: "manageShops" })} className="font-medium text-primary">
               Add one
@@ -169,7 +169,7 @@ function GoShoppingScreen({ go }: { go: (s: Screen) => void }) {
             <button
               key={id}
               onClick={() => go({ name: "store", storeId: id })}
-              className="flex w-full items-center gap-4 rounded-3xl bg-card px-5 py-6 text-left transition active:scale-[0.99]"
+              className="flex w-full items-center gap-4 rounded-3xl bg-card border border-border shadow-card px-5 py-6 text-left transition active:scale-[0.99]"
             >
               <span className="h-14 w-14 shrink-0 rounded-2xl" style={{ backgroundColor: store.color }} />
               <div className="min-w-0 flex-1">
@@ -341,7 +341,7 @@ function AddItemScreen({ go }: { go: (s: Screen) => void }) {
       </h2>
       <div className="space-y-2 pb-6">
         {suggestions.length === 0 && (
-          <div className="rounded-3xl bg-card px-5 py-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-3xl bg-card border border-border px-5 py-8 text-center text-sm text-muted-foreground">
             {favourites.length === 0 ? (
               <>
                 No favourites yet.{" "}
@@ -359,7 +359,7 @@ function AddItemScreen({ go }: { go: (s: Screen) => void }) {
           <button
             key={f.id}
             onClick={() => addFromFavourite(f)}
-            className="flex w-full items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
+            className="flex w-full items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5 text-left transition active:scale-[0.99]"
           >
             <Star className="h-4 w-4 fill-favorite text-favorite" />
             <div className="min-w-0 flex-1">
@@ -412,7 +412,7 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
       <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Favourites</h1>
       <p className="mt-1 text-sm text-muted-foreground">Save items you buy often — they'll suggest as you type.</p>
 
-      <div className="mt-6 space-y-3 rounded-3xl bg-card p-5">
+      <div className="mt-6 space-y-3 rounded-3xl bg-card border border-border shadow-card p-5">
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -461,12 +461,12 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
       </h2>
       <div className="space-y-2 pb-6">
         {favs.length === 0 && (
-          <div className="rounded-3xl bg-card px-5 py-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-3xl bg-card border border-border px-5 py-8 text-center text-sm text-muted-foreground">
             No favourites yet.
           </div>
         )}
         {favs.map((f) => (
-          <div key={f.id} className="flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5">
+          <div key={f.id} className="flex items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5">
             <Star className="h-4 w-4 fill-favorite text-favorite" />
             <div className="min-w-0 flex-1">
               <p className="font-medium">{f.name}</p>
@@ -512,7 +512,7 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
         {shops.map((id, i) => {
           const s = STORES.find((x) => x.id === id)!;
           return (
-            <div key={id} className="flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5">
+            <div key={id} className="flex items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5">
               <span className="h-9 w-9 shrink-0 rounded-xl" style={{ backgroundColor: s.color }} />
               <p className="min-w-0 flex-1 font-medium">{s.name}</p>
               <button
@@ -553,7 +553,7 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
               <button
                 key={s.id}
                 onClick={() => add(s.id)}
-                className="flex w-full items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
+                className="flex w-full items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5 text-left transition active:scale-[0.99]"
               >
                 <span className="h-9 w-9 shrink-0 rounded-xl" style={{ backgroundColor: s.color }} />
                 <p className="min-w-0 flex-1 font-medium">{s.name}</p>
@@ -584,7 +584,7 @@ function MasterListScreen({ go, onEditDeal }: { go: (s: Screen) => void; onEditD
 
       <div className="mt-6 space-y-2">
         {visible.length === 0 && (
-          <div className="rounded-3xl bg-card px-5 py-10 text-center">
+          <div className="rounded-3xl bg-card border border-border shadow-card px-5 py-10 text-center">
             <p className="text-sm text-muted-foreground">Your list is empty.</p>
             <button
               onClick={() => go({ name: "addItem" })}
@@ -606,7 +606,7 @@ function MasterListScreen({ go, onEditDeal }: { go: (s: Screen) => void; onEditD
           </h2>
           <div className="space-y-1.5 pb-6">
             {recent.map((a) => (
-              <div key={a.id} className="rounded-2xl bg-card px-4 py-3 text-sm">
+              <div key={a.id} className="rounded-2xl bg-card border border-border px-4 py-3 text-sm">
                 <p>{a.text}</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   {formatDistanceToNow(a.at, { addSuffix: true })}
@@ -639,7 +639,7 @@ function ItemRow({
   const dealElsewhere = deal && viewingStore && deal.store !== viewingStore;
 
   return (
-    <div className={`flex items-center gap-4 rounded-2xl px-4 py-4 transition ${dealHere ? "bg-deal-soft" : "bg-card"}`}>
+    <div className={`flex items-center gap-4 rounded-2xl border border-border px-4 py-4 transition ${dealHere ? "bg-deal-soft" : "bg-card"}`}>
       <button
         onClick={() => {
           toggleCheck(item.id);
