@@ -500,7 +500,7 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
 /* ---------- MANAGE SHOPS ---------- */
 
 function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
-  const { profile } = useAuth();
+  const { profile, setProfile } = useAuth();
   const shops = useShops((s) => s.shops);
   const move = useShops((s) => s.move);
   const remove = useShops((s) => s.remove);
