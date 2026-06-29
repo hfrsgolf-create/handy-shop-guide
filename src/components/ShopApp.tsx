@@ -22,13 +22,15 @@ import {
 } from "lucide-react";
 import {
   useShop,
-  STORES,
   storeName,
   activeDeal,
   type Item,
   type StoreId,
 } from "@/lib/shop-store";
+import { useShops, FREE_SHOP_LIMIT, SHOP_COLOR_PRESETS, type Shop } from "@/lib/shops-store";
 import { useUserShops } from "@/lib/user-shops";
+import { supabase } from "@/integrations/supabase/client";
+import { Pencil, Sparkles } from "lucide-react";
 
 type Screen =
   | { name: "home" }
@@ -43,20 +45,25 @@ export function ShopApp() {
   const { profile } = useAuth();
   const initStore = useShop((s) => s.init);
   const ready = useShop((s) => s.ready);
+  const initShops = useShops((s) => s.init);
+  const shopsReady = useShops((s) => s.ready);
   const [screen, setScreen] = useState<Screen>({ name: "home" });
   const [editingDealFor, setEditingDealFor] = useState<Item | null>(null);
   const [spinnerExpired, setSpinnerExpired] = useState(false);
 
   useEffect(() => {
-    if (profile) initStore(profile.household_id, profile.name);
-  }, [profile?.household_id, profile?.name, initStore]);
+    if (profile) {
+      initStore(profile.household_id, profile.name);
+      initShops(profile.household_id);
+    }
+  }, [profile?.household_id, profile?.name, initStore, initShops]);
 
   useEffect(() => {
     const t = setTimeout(() => setSpinnerExpired(true), 1500);
     return () => clearTimeout(t);
   }, []);
 
-  const loaded = !!profile && ready;
+  const loaded = !!profile && ready && shopsReady;
   if (!loaded && !spinnerExpired) {
     return (
       <div className="mx-auto flex min-h-dvh max-w-md items-center justify-center bg-background text-sm text-muted-foreground">
@@ -161,8 +168,8 @@ function GoShoppingScreen({ go }: { go: (s: Screen) => void }) {
             .
           </div>
         )}
-        {shops.map((id) => {
-          const store = STORES.find((s) => s.id === id)!;
+        {shops.map((store) => {
+          const id = store.id;
           const visible = items.filter((it) => !it.checked && (it.preferredStore === id || (!it.isLocked && it.preferredStore !== "any") || it.preferredStore === "any"));
           const deals = visible.filter((it) => activeDeal(it) && activeDeal(it)!.store === id).length;
           return (
@@ -200,7 +207,8 @@ function StoreScreen({
   onEditDeal: (it: Item) => void;
 }) {
   const items = useShop((s) => s.items);
-  const store = STORES.find((s) => s.id === storeId)!;
+  const shops = useShops((s) => s.shops);
+  const store = shops.find((s) => s.id === storeId) ?? { id: storeId, name: storeName(storeId), color: "#94a3b8" };
 
   const visible = items.filter((it) => !it.checked).filter((it) => {
     if (it.isLocked) return it.preferredStore === storeId;
@@ -423,14 +431,11 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
 
         <div className="flex flex-wrap gap-2">
           <ChoiceChip selected={store === "any"} onClick={() => setStore("any")}>Any store</ChoiceChip>
-          {shops.map((id) => {
-            const s = STORES.find((x) => x.id === id)!;
-            return (
-              <ChoiceChip key={id} selected={store === id} onClick={() => setStore(id)}>
-                {s.name}
-              </ChoiceChip>
-            );
-          })}
+          {shops.map((sh) => (
+            <ChoiceChip key={sh.id} selected={store === sh.id} onClick={() => setStore(sh.id)}>
+              {sh.name}
+            </ChoiceChip>
+          ))}
         </div>
 
         <button
@@ -495,75 +500,287 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
 /* ---------- MANAGE SHOPS ---------- */
 
 function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
-  const { profile } = useAuth();
-  const { shops, add, remove, move } = useUserShops(profile?.household_id);
-  const available = STORES.filter((s) => !shops.includes(s.id));
+  const { profile, setProfile } = useAuth();
+  const shops = useShops((s) => s.shops);
+  const move = useShops((s) => s.move);
+  const remove = useShops((s) => s.remove);
+  const [editing, setEditing] = useState<Shop | "new" | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Shop | null>(null);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+
+  const isPremium = !!profile?.is_premium;
+  const atLimit = !isPremium && shops.length >= FREE_SHOP_LIMIT;
+
+  const upgrade = async () => {
+    if (!profile) return;
+    await supabase.from("profiles").update({ is_premium: true }).eq("id", profile.id);
+    setProfile({ ...profile, is_premium: true });
+    toast.success("You're on Premium — add as many shops as you like.");
+    setShowUpgrade(false);
+  };
+
+  const onAddClick = () => {
+    if (atLimit) {
+      setShowUpgrade(true);
+      return;
+    }
+    setEditing("new");
+  };
 
   return (
     <div className="px-6 pt-14">
-      <BackHeader go={go} />
-      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Manage shops</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Reorder or add stores you shop at.</p>
-
-      <h2 className="mt-7 mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-        Your shops
-      </h2>
-      <div className="space-y-2">
-        {shops.map((id, i) => {
-          const s = STORES.find((x) => x.id === id)!;
-          return (
-            <div key={id} className="flex items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5">
-              <span className="h-9 w-9 shrink-0 rounded-xl" style={{ backgroundColor: s.color }} />
-              <p className="min-w-0 flex-1 font-medium">{s.name}</p>
-              <button
-                onClick={() => move(id, -1)}
-                disabled={i === 0}
-                className="rounded-full p-2 text-muted-foreground disabled:opacity-30"
-                aria-label="Move up"
-              >
-                <ArrowUp className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => move(id, 1)}
-                disabled={i === shops.length - 1}
-                className="rounded-full p-2 text-muted-foreground disabled:opacity-30"
-                aria-label="Move down"
-              >
-                <ArrowDown className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => remove(id)}
-                className="rounded-full p-2 text-muted-foreground"
-                aria-label="Remove shop"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          );
-        })}
+      <div className="flex items-start justify-between gap-3">
+        <BackHeader go={go} />
+        {!isPremium && (
+          <button
+            onClick={() => setShowUpgrade(true)}
+            className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground"
+          >
+            <Sparkles className="h-3.5 w-3.5" /> Upgrade
+          </button>
+        )}
       </div>
 
-      {available.length > 0 && (
-        <>
-          <h2 className="mt-7 mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-            Add a shop
-          </h2>
-          <div className="space-y-2 pb-6">
-            {available.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => add(s.id)}
-                className="flex w-full items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5 text-left transition active:scale-[0.99]"
+      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Manage shops</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {isPremium
+          ? "Reorder, rename, or add new stores."
+          : `Free plan · ${shops.length}/${FREE_SHOP_LIMIT} shops`}
+      </p>
+
+      <div className="mt-7 space-y-2.5">
+        {shops.map((s, i) => (
+          <div
+            key={s.id}
+            className="flex items-center gap-3 rounded-3xl bg-card border border-border shadow-card px-4 py-4"
+          >
+            <span
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-semibold text-white"
+              style={{ backgroundColor: s.color }}
+              aria-hidden
+            >
+              {s.name.charAt(0).toUpperCase()}
+            </span>
+            <p className="min-w-0 flex-1 truncate text-[15px] font-semibold">{s.name}</p>
+            <div className="flex items-center">
+              <IconBtn aria-label="Move up" disabled={i === 0} onClick={() => move(s.id, -1)}>
+                <ArrowUp className="h-4 w-4" />
+              </IconBtn>
+              <IconBtn
+                aria-label="Move down"
+                disabled={i === shops.length - 1}
+                onClick={() => move(s.id, 1)}
               >
-                <span className="h-9 w-9 shrink-0 rounded-xl" style={{ backgroundColor: s.color }} />
-                <p className="min-w-0 flex-1 font-medium">{s.name}</p>
-                <Plus className="h-4 w-4 text-muted-foreground" />
+                <ArrowDown className="h-4 w-4" />
+              </IconBtn>
+              <IconBtn aria-label="Edit" onClick={() => setEditing(s)}>
+                <Pencil className="h-4 w-4" />
+              </IconBtn>
+              <IconBtn aria-label="Delete" onClick={() => setConfirmDelete(s)}>
+                <Trash2 className="h-4 w-4" />
+              </IconBtn>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={onAddClick}
+        className={`mt-5 flex w-full items-center justify-center gap-2 rounded-3xl px-5 py-5 text-[15px] font-semibold transition active:scale-[0.99] ${
+          atLimit
+            ? "bg-secondary text-muted-foreground"
+            : "bg-primary text-primary-foreground shadow-card"
+        }`}
+      >
+        <Plus className="h-5 w-5" /> Add shop
+      </button>
+
+      {atLimit && (
+        <p className="mt-3 text-center text-xs text-muted-foreground">
+          Free plan allows up to {FREE_SHOP_LIMIT} shops.{" "}
+          <button onClick={() => setShowUpgrade(true)} className="font-medium text-primary">
+            Upgrade to add more
+          </button>
+          .
+        </p>
+      )}
+
+      <div className="pb-6" />
+
+      {editing && (
+        <ShopEditorSheet
+          shop={editing === "new" ? null : editing}
+          onClose={() => setEditing(null)}
+        />
+      )}
+
+      {confirmDelete && (
+        <ConfirmSheet
+          title="Remove this shop?"
+          body={`${confirmDelete.name} will be removed from your list.`}
+          confirmLabel="Remove"
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={async () => {
+            const name = confirmDelete.name;
+            await remove(confirmDelete.id);
+            setConfirmDelete(null);
+            toast.success(`${name} removed`);
+          }}
+        />
+      )}
+
+      {showUpgrade && (
+        <Sheet onClose={() => setShowUpgrade(false)} title="Go Premium">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Free plans include {FREE_SHOP_LIMIT} shops. Premium unlocks unlimited shops, plus
+              future perks like price comparison and deal alerts.
+            </p>
+            <button
+              onClick={upgrade}
+              className="w-full rounded-full bg-primary py-3 text-sm font-medium text-primary-foreground"
+            >
+              Upgrade now
+            </button>
+            <button
+              onClick={() => setShowUpgrade(false)}
+              className="w-full rounded-full bg-secondary py-3 text-sm font-medium text-secondary-foreground"
+            >
+              Maybe later
+            </button>
+          </div>
+        </Sheet>
+      )}
+    </div>
+  );
+}
+
+function IconBtn({
+  children,
+  disabled,
+  onClick,
+  "aria-label": ariaLabel,
+}: {
+  children: React.ReactNode;
+  disabled?: boolean;
+  onClick: () => void;
+  "aria-label": string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary disabled:opacity-30"
+    >
+      {children}
+    </button>
+  );
+}
+
+function ShopEditorSheet({ shop, onClose }: { shop: Shop | null; onClose: () => void }) {
+  const add = useShops((s) => s.add);
+  const update = useShops((s) => s.update);
+  const isEdit = !!shop;
+  const [name, setName] = useState(shop?.name ?? "");
+  const [color, setColor] = useState(shop?.color ?? SHOP_COLOR_PRESETS[0].value);
+
+  const submit = async () => {
+    const v = name.trim();
+    if (!v) return;
+    if (isEdit && shop) {
+      await update(shop.id, { name: v, color });
+      toast.success(`Updated ${v}`);
+    } else {
+      const created = await add({ name: v, color });
+      if (created) toast.success(`Added ${v}`);
+    }
+    onClose();
+  };
+
+  return (
+    <Sheet onClose={onClose} title={isEdit ? "Edit shop" : "Add shop"}>
+      <div className="space-y-5">
+        <Field label="Shop name">
+          <input
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submit()}
+            placeholder="e.g. Waitrose"
+            className="w-full rounded-2xl bg-secondary px-4 py-3 text-base outline-none focus:ring-2 focus:ring-ring"
+          />
+        </Field>
+
+        <Field label="Colour">
+          <div className="grid grid-cols-5 gap-2.5">
+            {SHOP_COLOR_PRESETS.map((c) => (
+              <button
+                key={c.value}
+                onClick={() => setColor(c.value)}
+                aria-label={c.name}
+                className={`flex h-12 items-center justify-center rounded-2xl transition ${
+                  color === c.value ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : ""
+                }`}
+                style={{ backgroundColor: c.value }}
+              >
+                {color === c.value && <Check className="h-4 w-4 text-white" strokeWidth={3} />}
               </button>
             ))}
           </div>
-        </>
-      )}
-    </div>
+        </Field>
+
+        <Field label="Logo">
+          <div className="rounded-2xl border border-dashed border-border px-4 py-5 text-center text-xs text-muted-foreground">
+            Logo upload coming soon
+          </div>
+        </Field>
+
+        <button
+          onClick={submit}
+          disabled={!name.trim()}
+          className="w-full rounded-full bg-primary py-3 text-sm font-medium text-primary-foreground disabled:opacity-40"
+        >
+          {isEdit ? "Save changes" : "Add shop"}
+        </button>
+      </div>
+    </Sheet>
+  );
+}
+
+function ConfirmSheet({
+  title,
+  body,
+  confirmLabel,
+  onConfirm,
+  onCancel,
+}: {
+  title: string;
+  body: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <Sheet onClose={onCancel} title={title}>
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">{body}</p>
+        <div className="flex gap-2">
+          <button
+            onClick={onCancel}
+            className="flex-1 rounded-full bg-secondary py-3 text-sm font-medium text-secondary-foreground"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 rounded-full bg-destructive py-3 text-sm font-medium text-destructive-foreground"
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </Sheet>
   );
 }
 
@@ -688,7 +905,7 @@ function DealSheet({ item, onClose }: { item: Item; onClose: () => void }) {
   const { profile } = useAuth();
   const { shops } = useUserShops(profile?.household_id);
   const existing = item.deal;
-  const fallback = (shops[0] ?? "tesco") as Exclude<StoreId, "any">;
+  const fallback = (shops[0]?.id ?? "tesco") as Exclude<StoreId, "any">;
   const [store, setStore] = useState<Exclude<StoreId, "any">>(
     (existing?.store as Exclude<StoreId, "any">) ??
       (item.preferredStore !== "any" ? (item.preferredStore as Exclude<StoreId, "any">) : fallback),
@@ -713,14 +930,11 @@ function DealSheet({ item, onClose }: { item: Item; onClose: () => void }) {
       <div className="space-y-5">
         <Field label="Store">
           <div className="grid grid-cols-2 gap-2">
-            {(shops.length ? shops : STORES.map((s) => s.id)).map((id) => {
-              const s = STORES.find((x) => x.id === id)!;
-              return (
-                <ChoiceChip key={id} selected={store === id} onClick={() => setStore(id)}>
-                  {s.name}
-                </ChoiceChip>
-              );
-            })}
+            {shops.map((sh) => (
+              <ChoiceChip key={sh.id} selected={store === sh.id} onClick={() => setStore(sh.id)}>
+                {sh.name}
+              </ChoiceChip>
+            ))}
           </div>
         </Field>
         <Field label="Price (£, optional)">

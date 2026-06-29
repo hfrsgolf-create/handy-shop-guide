@@ -2,13 +2,14 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type Profile = { id: string; name: string; household_id: string };
+export type Profile = { id: string; name: string; household_id: string; is_premium?: boolean };
 
 type AuthCtx = {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  setProfile: (p: Profile | null) => void;
   signIn: (email: string, password: string, stay: boolean) => Promise<{ error: string | null }>;
   signUp: (name: string, email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
@@ -41,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       for (let i = 0; i < 4; i++) {
         const { data } = await supabase
           .from("profiles")
-          .select("id, name, household_id")
+          .select("id, name, household_id, is_premium")
           .eq("id", session.user.id)
           .maybeSingle();
         if (cancelled) return;
@@ -66,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: created } = await supabase
         .from("profiles")
         .insert({ id: session.user.id, name, household_id: hh.id })
-        .select("id, name, household_id")
+        .select("id, name, household_id, is_premium")
         .single();
       if (cancelled || !created) return;
       setProfile(created as Profile);
@@ -83,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     profile,
     loading,
+    setProfile,
     async signIn(email, password, stay) {
       // "Stay logged in" controls whether the session persists across tabs/restart.
       if (typeof window !== "undefined") {
