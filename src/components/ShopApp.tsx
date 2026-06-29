@@ -412,7 +412,7 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
       <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Favourites</h1>
       <p className="mt-1 text-sm text-muted-foreground">Save items you buy often — they'll suggest as you type.</p>
 
-      <div className="mt-6 space-y-3 rounded-3xl bg-card p-5">
+      <div className="mt-6 space-y-3 rounded-3xl bg-card border border-border shadow-card p-5">
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -461,7 +461,7 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
       </h2>
       <div className="space-y-2 pb-6">
         {favs.length === 0 && (
-          <div className="rounded-3xl bg-card px-5 py-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-3xl bg-card border border-border px-5 py-8 text-center text-sm text-muted-foreground">
             No favourites yet.
           </div>
         )}
