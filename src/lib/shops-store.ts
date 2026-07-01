@@ -52,6 +52,7 @@ type State = {
   ready: boolean;
   householdId: string | null;
   init: (householdId: string) => Promise<void>;
+  ensureDefaults: () => Promise<void>;
   reset: () => void;
   add: (input: { name: string; color: string }) => Promise<Shop | null>;
   update: (id: string, patch: { name?: string; color?: string }) => Promise<void>;
@@ -65,6 +66,27 @@ const slugify = (s: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "")
     .slice(0, 40) || `shop-${Date.now().toString(36)}`;
+
+async function seedAndFetchDefaults(householdId: string): Promise<Shop[]> {
+  const seed = DEFAULT_SHOPS.map((s, i) => ({
+    household_id: householdId,
+    id: s.id,
+    name: s.name,
+    color: s.color,
+    order_index: i,
+    is_default: true,
+  }));
+  const { error } = await supabase
+    .from("shops")
+    .upsert(seed, { onConflict: "household_id,id", ignoreDuplicates: true });
+  if (error) console.error("[shops] seed defaults failed", error);
+  const { data } = await supabase
+    .from("shops")
+    .select("*")
+    .eq("household_id", householdId)
+    .order("order_index", { ascending: true });
+  return (data ?? []).map((r) => toShop(r as DbShop));
+}
 
 export const useShops = create<State>((set, get) => ({
   shops: [],
@@ -82,24 +104,17 @@ export const useShops = create<State>((set, get) => ({
       .order("order_index", { ascending: true });
 
     let rows = (data ?? []).map((r) => toShop(r as DbShop));
-
     if (rows.length === 0) {
-      const seed = DEFAULT_SHOPS.map((s, i) => ({
-        household_id: householdId,
-        id: s.id,
-        name: s.name,
-        color: s.color,
-        order_index: i,
-        is_default: true,
-      }));
-      const { data: inserted } = await supabase.from("shops").insert(seed).select("*");
-      rows = (inserted ?? seed.map((s) => ({ ...s }) as unknown as DbShop)).map((r) =>
-        toShop(r as DbShop),
-      );
-      rows.sort((a, b) => a.orderIndex - b.orderIndex);
+      rows = await seedAndFetchDefaults(householdId);
     }
-
     set({ shops: rows, ready: true });
+  },
+
+  ensureDefaults: async () => {
+    const { householdId, shops } = get();
+    if (!householdId || shops.length > 0) return;
+    const rows = await seedAndFetchDefaults(householdId);
+    if (rows.length > 0) set({ shops: rows });
   },
 
   add: async ({ name, color }) => {
