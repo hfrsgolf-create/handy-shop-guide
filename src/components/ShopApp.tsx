@@ -47,6 +47,8 @@ export function ShopApp() {
   const ready = useShop((s) => s.ready);
   const initShops = useShops((s) => s.init);
   const shopsReady = useShops((s) => s.ready);
+  const shopsList = useShops((s) => s.shops);
+  const ensureShopDefaults = useShops((s) => s.ensureDefaults);
   const [screen, setScreen] = useState<Screen>({ name: "home" });
   const [editingDealFor, setEditingDealFor] = useState<Item | null>(null);
   const [spinnerExpired, setSpinnerExpired] = useState(false);
@@ -57,6 +59,13 @@ export function ShopApp() {
       initShops(profile.household_id);
     }
   }, [profile?.household_id, profile?.name, initStore, initShops]);
+
+  // Fail-safe: if we ever end up with an empty shop list, re-seed defaults.
+  useEffect(() => {
+    if (profile && shopsReady && shopsList.length === 0) {
+      ensureShopDefaults();
+    }
+  }, [profile?.household_id, shopsReady, shopsList.length, ensureShopDefaults]);
 
   useEffect(() => {
     const t = setTimeout(() => setSpinnerExpired(true), 1500);
