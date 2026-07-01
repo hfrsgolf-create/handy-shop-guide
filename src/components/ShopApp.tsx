@@ -1056,11 +1056,26 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function ChoiceChip({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: React.ReactNode }) {
+function ChoiceChip({
+  selected,
+  onClick,
+  children,
+  widthCh,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  widthCh?: number;
+}) {
+  const style = widthCh
+    ? { width: `min(calc(${widthCh}ch + 1.5rem), 70vw)`, minWidth: "5rem" }
+    : undefined;
   return (
     <button
       onClick={onClick}
-      className={`rounded-2xl px-3 py-2.5 text-sm font-medium transition ${
+      style={style}
+      title={typeof children === "string" ? children : undefined}
+      className={`block truncate whitespace-nowrap rounded-2xl px-3 py-2.5 text-left text-sm font-medium transition ${
         selected ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
       }`}
     >
