@@ -429,14 +429,20 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
           className="w-full rounded-2xl bg-secondary px-4 py-3 text-base outline-none focus:ring-2 focus:ring-ring"
         />
 
-        <div className="flex flex-wrap gap-2">
-          <ChoiceChip selected={store === "any"} onClick={() => setStore("any")}>Any store</ChoiceChip>
-          {shops.map((sh) => (
-            <ChoiceChip key={sh.id} selected={store === sh.id} onClick={() => setStore(sh.id)}>
-              {sh.name}
-            </ChoiceChip>
-          ))}
-        </div>
+        {(() => {
+          const names = ["Any store", ...shops.map((sh) => sh.name)];
+          const widthCh = Math.min(Math.max(...names.map((n) => n.length), 6), 28);
+          return (
+            <div className="flex flex-col items-start gap-2">
+              <ChoiceChip widthCh={widthCh} selected={store === "any"} onClick={() => setStore("any")}>Any store</ChoiceChip>
+              {shops.map((sh) => (
+                <ChoiceChip widthCh={widthCh} key={sh.id} selected={store === sh.id} onClick={() => setStore(sh.id)}>
+                  {sh.name}
+                </ChoiceChip>
+              ))}
+            </div>
+          );
+        })()}
 
         <button
           onClick={() => setLocked((v) => !v)}
@@ -929,13 +935,18 @@ function DealSheet({ item, onClose }: { item: Item; onClose: () => void }) {
     <Sheet onClose={onClose} title={`Deal for ${item.name}`}>
       <div className="space-y-5">
         <Field label="Store">
-          <div className="grid grid-cols-2 gap-2">
-            {shops.map((sh) => (
-              <ChoiceChip key={sh.id} selected={store === sh.id} onClick={() => setStore(sh.id)}>
-                {sh.name}
-              </ChoiceChip>
-            ))}
-          </div>
+          {(() => {
+            const widthCh = Math.min(Math.max(...shops.map((sh) => sh.name.length), 6), 28);
+            return (
+              <div className="flex flex-col items-start gap-2">
+                {shops.map((sh) => (
+                  <ChoiceChip widthCh={widthCh} key={sh.id} selected={store === sh.id} onClick={() => setStore(sh.id)}>
+                    {sh.name}
+                  </ChoiceChip>
+                ))}
+              </div>
+            );
+          })()}
         </Field>
         <Field label="Price (£, optional)">
           <input
@@ -1056,11 +1067,26 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function ChoiceChip({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: React.ReactNode }) {
+function ChoiceChip({
+  selected,
+  onClick,
+  children,
+  widthCh,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  widthCh?: number;
+}) {
+  const style = widthCh
+    ? { width: `min(calc(${widthCh}ch + 1.5rem), 70vw)`, minWidth: "5rem" }
+    : undefined;
   return (
     <button
       onClick={onClick}
-      className={`rounded-2xl px-3 py-2.5 text-sm font-medium transition ${
+      style={style}
+      title={typeof children === "string" ? children : undefined}
+      className={`block truncate whitespace-nowrap rounded-2xl px-3 py-2.5 text-left text-sm font-medium transition ${
         selected ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
       }`}
     >
