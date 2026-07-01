@@ -935,13 +935,18 @@ function DealSheet({ item, onClose }: { item: Item; onClose: () => void }) {
     <Sheet onClose={onClose} title={`Deal for ${item.name}`}>
       <div className="space-y-5">
         <Field label="Store">
-          <div className="grid grid-cols-2 gap-2">
-            {shops.map((sh) => (
-              <ChoiceChip key={sh.id} selected={store === sh.id} onClick={() => setStore(sh.id)}>
-                {sh.name}
-              </ChoiceChip>
-            ))}
-          </div>
+          {(() => {
+            const widthCh = Math.min(Math.max(...shops.map((sh) => sh.name.length), 6), 28);
+            return (
+              <div className="flex flex-col items-start gap-2">
+                {shops.map((sh) => (
+                  <ChoiceChip widthCh={widthCh} key={sh.id} selected={store === sh.id} onClick={() => setStore(sh.id)}>
+                    {sh.name}
+                  </ChoiceChip>
+                ))}
+              </div>
+            );
+          })()}
         </Field>
         <Field label="Price (£, optional)">
           <input
