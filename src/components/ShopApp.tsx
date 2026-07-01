@@ -429,14 +429,20 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
           className="w-full rounded-2xl bg-secondary px-4 py-3 text-base outline-none focus:ring-2 focus:ring-ring"
         />
 
-        <div className="flex flex-wrap gap-2">
-          <ChoiceChip selected={store === "any"} onClick={() => setStore("any")}>Any store</ChoiceChip>
-          {shops.map((sh) => (
-            <ChoiceChip key={sh.id} selected={store === sh.id} onClick={() => setStore(sh.id)}>
-              {sh.name}
-            </ChoiceChip>
-          ))}
-        </div>
+        {(() => {
+          const names = ["Any store", ...shops.map((sh) => sh.name)];
+          const widthCh = Math.min(Math.max(...names.map((n) => n.length), 6), 28);
+          return (
+            <div className="flex flex-col items-start gap-2">
+              <ChoiceChip widthCh={widthCh} selected={store === "any"} onClick={() => setStore("any")}>Any store</ChoiceChip>
+              {shops.map((sh) => (
+                <ChoiceChip widthCh={widthCh} key={sh.id} selected={store === sh.id} onClick={() => setStore(sh.id)}>
+                  {sh.name}
+                </ChoiceChip>
+              ))}
+            </div>
+          );
+        })()}
 
         <button
           onClick={() => setLocked((v) => !v)}
