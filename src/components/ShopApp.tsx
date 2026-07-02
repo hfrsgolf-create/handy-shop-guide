@@ -522,6 +522,9 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
 
 /* ---------- MANAGE SHOPS ---------- */
 
+// Flip to true to re-enable the free-plan cap + upgrade UI.
+const PREMIUM_RESTRICTIONS_ENABLED = false;
+
 function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
   const { profile, setProfile } = useAuth();
   const shops = useGuaranteedShops();
@@ -532,7 +535,9 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
   const [showUpgrade, setShowUpgrade] = useState(false);
 
   const isPremium = !!profile?.is_premium;
-  const atLimit = !isPremium && shops.length >= FREE_SHOP_LIMIT;
+  const atLimit =
+    PREMIUM_RESTRICTIONS_ENABLED && !isPremium && shops.length >= FREE_SHOP_LIMIT;
+  const showUpgradeUi = PREMIUM_RESTRICTIONS_ENABLED && !isPremium;
 
   const upgrade = async () => {
     if (!profile) return;
@@ -554,7 +559,7 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
     <div className="px-6 pt-14">
       <div className="flex items-start justify-between gap-3">
         <BackHeader go={go} />
-        {!isPremium && (
+        {showUpgradeUi && (
           <button
             onClick={() => setShowUpgrade(true)}
             className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground"
@@ -566,9 +571,7 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
 
       <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Manage shops</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        {isPremium
-          ? "Reorder, rename, or add new stores."
-          : `Free plan · ${shops.length}/${FREE_SHOP_LIMIT} shops`}
+        Reorder, rename, or add new stores.
       </p>
 
       <div className="mt-7 space-y-2.5">
@@ -609,24 +612,10 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
 
       <button
         onClick={onAddClick}
-        className={`mt-5 flex w-full items-center justify-center gap-2 rounded-3xl px-5 py-5 text-[15px] font-semibold transition active:scale-[0.99] ${
-          atLimit
-            ? "bg-secondary text-muted-foreground"
-            : "bg-primary text-primary-foreground shadow-card"
-        }`}
+        className="mt-5 flex w-full items-center justify-center gap-2 rounded-3xl bg-primary px-5 py-5 text-[15px] font-semibold text-primary-foreground shadow-card transition active:scale-[0.99]"
       >
         <Plus className="h-5 w-5" /> Add shop
       </button>
-
-      {atLimit && (
-        <p className="mt-3 text-center text-xs text-muted-foreground">
-          Free plan allows up to {FREE_SHOP_LIMIT} shops.{" "}
-          <button onClick={() => setShowUpgrade(true)} className="font-medium text-primary">
-            Upgrade to add more
-          </button>
-          .
-        </p>
-      )}
 
       <div className="pb-6" />
 
@@ -652,12 +641,12 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
         />
       )}
 
-      {showUpgrade && (
+      {showUpgrade && showUpgradeUi && (
         <Sheet onClose={() => setShowUpgrade(false)} title="Go Premium">
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Free plans include {FREE_SHOP_LIMIT} shops. Premium unlocks unlimited shops, plus
-              future perks like price comparison and deal alerts.
+              Premium unlocks unlimited shops, plus future perks like price comparison and deal
+              alerts.
             </p>
             <button
               onClick={upgrade}
