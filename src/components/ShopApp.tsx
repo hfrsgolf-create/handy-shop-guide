@@ -524,7 +524,7 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
 
 function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
   const { profile, setProfile } = useAuth();
-  const shops = useShops((s) => s.shops);
+  const shops = useGuaranteedShops();
   const move = useShops((s) => s.move);
   const remove = useShops((s) => s.remove);
   const [editing, setEditing] = useState<Shop | "new" | null>(null);
