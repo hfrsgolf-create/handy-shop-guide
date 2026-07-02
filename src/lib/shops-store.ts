@@ -31,6 +31,9 @@ const DEFAULT_SHOPS: Omit<Shop, "orderIndex">[] = [
   { id: "aldi", name: "Aldi", color: "#1c3a6e", isDefault: true },
 ];
 
+/** Fallback shops rendered when shared state is (still) empty. */
+export const FALLBACK_SHOPS: Shop[] = DEFAULT_SHOPS.map((s, i) => ({ ...s, orderIndex: i }));
+
 type DbShop = {
   id: string;
   name: string;
