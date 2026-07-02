@@ -156,9 +156,26 @@ function HomeScreen({ go }: { go: (s: Screen) => void }) {
 
 /* ---------- GO SHOPPING ---------- */
 
+/**
+ * Render-time guarantee that shop screens never see an empty list.
+ * - Calls ensureDefaults() as soon as the screen mounts with 0 shops.
+ * - Returns FALLBACK_SHOPS while the DB round-trip is in flight so the UI
+ *   is never blank.
+ */
+function useGuaranteedShops(): Shop[] {
+  const shops = useShops((s) => s.shops);
+  const ensureDefaults = useShops((s) => s.ensureDefaults);
+  const householdId = useShops((s) => s.householdId);
+  useEffect(() => {
+    if (householdId && shops.length === 0) {
+      ensureDefaults();
+    }
+  }, [householdId, shops.length, ensureDefaults]);
+  return shops.length > 0 ? shops : FALLBACK_SHOPS;
+}
+
 function GoShoppingScreen({ go }: { go: (s: Screen) => void }) {
-  const { profile } = useAuth();
-  const { shops } = useUserShops(profile?.household_id);
+  const shops = useGuaranteedShops();
   const items = useShop((s) => s.items);
 
   return (
@@ -168,15 +185,6 @@ function GoShoppingScreen({ go }: { go: (s: Screen) => void }) {
       <p className="mt-1 text-sm text-muted-foreground">Tap a shop to see what to buy there.</p>
 
       <div className="mt-8 space-y-3">
-        {shops.length === 0 && (
-          <div className="rounded-3xl bg-card border border-border px-5 py-10 text-center text-sm text-muted-foreground">
-            No shops yet.{" "}
-            <button onClick={() => go({ name: "manageShops" })} className="font-medium text-primary">
-              Add one
-            </button>
-            .
-          </div>
-        )}
         {shops.map((store) => {
           const id = store.id;
           const visible = items.filter((it) => !it.checked && (it.preferredStore === id || (!it.isLocked && it.preferredStore !== "any") || it.preferredStore === "any"));
