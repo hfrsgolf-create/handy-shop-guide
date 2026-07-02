@@ -27,7 +27,7 @@ import {
   type Item,
   type StoreId,
 } from "@/lib/shop-store";
-import { useShops, FREE_SHOP_LIMIT, SHOP_COLOR_PRESETS, type Shop } from "@/lib/shops-store";
+import { useShops, FREE_SHOP_LIMIT, SHOP_COLOR_PRESETS, FALLBACK_SHOPS, type Shop } from "@/lib/shops-store";
 import { useUserShops } from "@/lib/user-shops";
 import { supabase } from "@/integrations/supabase/client";
 import { Pencil, Sparkles } from "lucide-react";
