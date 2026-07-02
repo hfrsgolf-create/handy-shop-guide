@@ -9,7 +9,9 @@ export type Shop = {
   isDefault: boolean;
 };
 
-export const FREE_SHOP_LIMIT = 4;
+// Premium restrictions are disabled for testing. Set this back to 4 (and
+// flip PREMIUM_RESTRICTIONS_ENABLED in ShopApp.tsx) to re-enable the cap.
+export const FREE_SHOP_LIMIT = Number.POSITIVE_INFINITY;
 
 export const SHOP_COLOR_PRESETS: { name: string; value: string }[] = [
   { name: "Tesco blue", value: "#1f4ea1" },
