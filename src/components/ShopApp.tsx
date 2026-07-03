@@ -697,17 +697,33 @@ function ShopEditorSheet({ shop, onClose }: { shop: Shop | null; onClose: () => 
   const [name, setName] = useState(shop?.name ?? "");
   const [color, setColor] = useState(shop?.color ?? SHOP_COLOR_PRESETS[0].value);
 
+  const [saving, setSaving] = useState(false);
+
   const submit = async () => {
+    if (saving) return;
     const v = name.trim();
-    if (!v) return;
-    if (isEdit && shop) {
-      await update(shop.id, { name: v, color });
-      toast.success(`Updated ${v}`);
-    } else {
-      const created = await add({ name: v, color });
-      if (created) toast.success(`Added ${v}`);
+    if (!v) {
+      toast.error("Please enter a shop name");
+      return;
     }
-    onClose();
+    setSaving(true);
+    try {
+      if (isEdit && shop) {
+        await update(shop.id, { name: v, color });
+        toast.success(`Updated ${v}`);
+        onClose();
+      } else {
+        const created = await add({ name: v, color });
+        if (created) {
+          toast.success(`Added ${v}`);
+          onClose();
+        } else {
+          toast.error("Couldn't add shop — please try again");
+        }
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
