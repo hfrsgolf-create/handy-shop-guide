@@ -126,7 +126,7 @@ export const useShops = create<State>((set, get) => ({
     const { householdId, ensureDefaults } = get();
     if (!householdId) {
       console.error("[shops.add] no householdId — cannot add shop");
-      return null;
+      throw new Error("Your account isn't fully loaded yet — please wait a moment and try again");
     }
     // Make sure defaults are seeded so we don't render on top of the fallback list.
     if (get().shops.length === 0) {
@@ -152,7 +152,7 @@ export const useShops = create<State>((set, get) => ({
       .single();
     if (error || !data) {
       console.error("[shops.add] insert failed", error);
-      return null;
+      throw new Error(error?.message ?? "Unknown error saving shop");
     }
     const shop = toShop(data as DbShop);
     set({ shops: [...get().shops, shop] });

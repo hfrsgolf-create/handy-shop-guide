@@ -713,14 +713,13 @@ function ShopEditorSheet({ shop, onClose }: { shop: Shop | null; onClose: () => 
         toast.success(`Updated ${v}`);
         onClose();
       } else {
-        const created = await add({ name: v, color });
-        if (created) {
-          toast.success(`Added ${v}`);
-          onClose();
-        } else {
-          toast.error("Couldn't add shop — please try again");
-        }
+        await add({ name: v, color });
+        toast.success(`Added ${v}`);
+        onClose();
       }
+    } catch (err) {
+      console.error("[AddShop] failed:", err);
+      toast.error(err instanceof Error ? err.message : "Couldn't add shop");
     } finally {
       setSaving(false);
     }
