@@ -766,10 +766,10 @@ function ShopEditorSheet({ shop, onClose }: { shop: Shop | null; onClose: () => 
 
         <button
           onClick={submit}
-          disabled={!name.trim()}
+          disabled={!name.trim() || saving}
           className="w-full rounded-full bg-primary py-3 text-sm font-medium text-primary-foreground disabled:opacity-40"
         >
-          {isEdit ? "Save changes" : "Add shop"}
+          {saving ? "Saving…" : isEdit ? "Save changes" : "Add shop"}
         </button>
       </div>
     </Sheet>
