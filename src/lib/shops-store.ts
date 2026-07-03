@@ -123,8 +123,16 @@ export const useShops = create<State>((set, get) => ({
   },
 
   add: async ({ name, color }) => {
-    const { householdId, shops } = get();
-    if (!householdId) return null;
+    const { householdId, ensureDefaults } = get();
+    if (!householdId) {
+      console.error("[shops.add] no householdId — cannot add shop");
+      return null;
+    }
+    // Make sure defaults are seeded so we don't render on top of the fallback list.
+    if (get().shops.length === 0) {
+      await ensureDefaults();
+    }
+    const shops = get().shops;
     const baseId = slugify(name);
     let id = baseId;
     let n = 2;
@@ -142,9 +150,12 @@ export const useShops = create<State>((set, get) => ({
       })
       .select("*")
       .single();
-    if (error || !data) return null;
+    if (error || !data) {
+      console.error("[shops.add] insert failed", error);
+      return null;
+    }
     const shop = toShop(data as DbShop);
-    set({ shops: [...shops, shop] });
+    set({ shops: [...get().shops, shop] });
     return shop;
   },
 
