@@ -471,7 +471,9 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
   }, [favs, shops]);
 
   const filteredFavs =
-    activeTab === "any" ? favs : favs.filter((f) => f.preferredStore === activeTab);
+    activeTab === null || activeTab === "any"
+      ? favs
+      : favs.filter((f) => f.preferredStore === activeTab);
 
   const canSubmit = (brand.trim() + product.trim()).length > 0;
 
