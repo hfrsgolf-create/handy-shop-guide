@@ -673,30 +673,37 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
   );
 }
 
-function TabPill({
+function StoreRow({
   active,
   onClick,
   label,
+  count,
   color,
 }: {
   active: boolean;
   onClick: () => void;
   label: string;
+  count: number;
   color?: string;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
+      className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-4 text-left transition active:scale-[0.99] ${
         active
           ? "bg-primary text-primary-foreground border-primary"
           : "bg-card text-foreground border-border"
       }`}
     >
-      {color && (
-        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
-      )}
-      {label}
+      <span
+        className="h-8 w-8 shrink-0 rounded-xl"
+        style={{ backgroundColor: color ?? (active ? "rgba(255,255,255,0.25)" : "hsl(var(--secondary))") }}
+      />
+      <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{label}</span>
+      <span className={`text-sm font-medium ${active ? "opacity-90" : "text-muted-foreground"}`}>
+        ({count})
+      </span>
+      <ChevronRight className={`h-4 w-4 ${active ? "opacity-90" : "text-muted-foreground"}`} />
     </button>
   );
 }
