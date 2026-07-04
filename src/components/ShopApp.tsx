@@ -403,101 +403,190 @@ function AddItemScreen({ go }: { go: (s: Screen) => void }) {
 
 /* ---------- FAVOURITES ---------- */
 
+const FAV_ONBOARDING_KEY = "favouritesOnboardingDismissed_v1";
+
 function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
-  const { profile } = useAuth();
-  const { shops } = useUserShops(profile?.household_id);
+  const shops = useGuaranteedShops();
   const items = useShop((s) => s.items);
   const addItem = useShop((s) => s.addItem);
   const toggleFav = useShop((s) => s.toggleFav);
   const removeItem = useShop((s) => s.removeItem);
   const favs = items.filter((i) => i.favorite);
 
-  const [name, setName] = useState("");
+  const [brand, setBrand] = useState("");
+  const [product, setProduct] = useState("");
   const [store, setStore] = useState<StoreId>("any");
   const [locked, setLocked] = useState(false);
+  const [lockPrompt, setLockPrompt] = useState(false);
+  const [activeTab, setActiveTab] = useState<StoreId>("any");
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!localStorage.getItem(FAV_ONBOARDING_KEY)) setShowOnboarding(true);
+  }, []);
+
+  const dismissOnboarding = () => {
+    if (dontShowAgain && typeof window !== "undefined") {
+      localStorage.setItem(FAV_ONBOARDING_KEY, "1");
+    }
+    setShowOnboarding(false);
+  };
 
   const submit = async () => {
-    const v = name.trim();
-    if (!v) return;
+    const combined = [brand.trim(), product.trim()].filter(Boolean).join(" ");
+    if (!combined) return;
     await addItem({
-      name: v,
+      name: combined,
       preferredStore: store,
       isLocked: locked && store !== "any",
       favorite: true,
     });
-    toast.success(`Saved ${v} as favourite`);
-    setName("");
+    toast.success(`Saved ${combined} as favourite`);
+    setBrand("");
+    setProduct("");
     setStore("any");
     setLocked(false);
   };
 
+  const onToggleLock = () => {
+    if (store === "any") {
+      toast.error("Select a store first to lock this favourite.");
+      return;
+    }
+    if (locked) {
+      setLocked(false);
+      return;
+    }
+    setLockPrompt(true);
+  };
+
+  const tabCounts = useMemo(() => {
+    const counts: Record<string, number> = { any: favs.length };
+    for (const sh of shops) {
+      counts[sh.id] = favs.filter((f) => f.preferredStore === sh.id).length;
+    }
+    return counts;
+  }, [favs, shops]);
+
+  const filteredFavs =
+    activeTab === "any" ? favs : favs.filter((f) => f.preferredStore === activeTab);
+
+  const canSubmit = (brand.trim() + product.trim()).length > 0;
+
   return (
     <div className="px-6 pt-14">
       <BackHeader go={go} />
-      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Favourites</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Save items you buy often — they'll suggest as you type.</p>
+      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Add favourites</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Save items you buy often — they'll suggest as you type.
+      </p>
 
+      {/* Add form */}
       <div className="mt-6 space-y-3 rounded-3xl bg-card border border-border shadow-card p-5">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && submit()}
-          placeholder="e.g. Semi-skimmed milk"
-          className="w-full rounded-2xl bg-secondary px-4 py-3 text-base outline-none focus:ring-2 focus:ring-ring"
-        />
+        <div className="space-y-2">
+          <label className="block text-xs font-medium text-muted-foreground">Brand</label>
+          <input
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
+            placeholder="e.g. Heinz"
+            className="w-full rounded-2xl bg-secondary px-4 py-3 text-base outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="block text-xs font-medium text-muted-foreground">Product</label>
+          <input
+            value={product}
+            onChange={(e) => setProduct(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && canSubmit && submit()}
+            placeholder="e.g. Baked Beans"
+            className="w-full rounded-2xl bg-secondary px-4 py-3 text-base outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
 
-        {(() => {
-          const names = ["Any store", ...shops.map((sh) => sh.name)];
-          const widthCh = Math.min(Math.max(...names.map((n) => n.length), 6), 28);
-          return (
-            <div className="flex flex-col items-start gap-2">
-              <ChoiceChip widthCh={widthCh} selected={store === "any"} onClick={() => setStore("any")}>Any store</ChoiceChip>
+        <div className="space-y-2">
+          <label className="block text-xs font-medium text-muted-foreground">Select store</label>
+          <div className="flex items-center gap-2">
+            <select
+              value={store}
+              onChange={(e) => {
+                const v = e.target.value as StoreId;
+                setStore(v);
+                if (v === "any") setLocked(false);
+              }}
+              className="flex-1 rounded-2xl bg-secondary px-4 py-3 text-base outline-none focus:ring-2 focus:ring-ring appearance-none"
+            >
+              <option value="any">Any store</option>
               {shops.map((sh) => (
-                <ChoiceChip widthCh={widthCh} key={sh.id} selected={store === sh.id} onClick={() => setStore(sh.id)}>
+                <option key={sh.id} value={sh.id}>
                   {sh.name}
-                </ChoiceChip>
+                </option>
               ))}
-            </div>
-          );
-        })()}
-
-        <button
-          onClick={() => setLocked((v) => !v)}
-          disabled={store === "any"}
-          className="flex w-full items-center justify-between rounded-2xl bg-secondary px-4 py-3 disabled:opacity-50"
-        >
-          <div className="flex items-center gap-2 text-sm">
-            {locked ? <Lock className="h-4 w-4" /> : <span className="text-xs text-muted-foreground">Flexible</span>}
-            {locked ? `Locked to ${storeName(store)}` : "Tap to lock to store"}
+            </select>
+            <button
+              onClick={onToggleLock}
+              aria-label={locked ? "Unlock store" : "Lock to store"}
+              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border transition ${
+                locked
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-secondary border-border text-muted-foreground"
+              } ${store === "any" ? "opacity-50" : ""}`}
+            >
+              <Lock className="h-4 w-4" />
+            </button>
           </div>
-          <div className={`h-6 w-10 rounded-full p-0.5 transition ${locked ? "bg-primary" : "bg-border"}`}>
-            <div className={`h-5 w-5 rounded-full bg-background transition ${locked ? "translate-x-4" : ""}`} />
-          </div>
-        </button>
+          {locked && store !== "any" && (
+            <p className="text-xs text-muted-foreground">
+              🔒 Locked — only appears in {storeName(store)}'s list.
+            </p>
+          )}
+        </div>
 
         <button
           onClick={submit}
-          disabled={!name.trim()}
+          disabled={!canSubmit}
           className="w-full rounded-full bg-primary py-3 text-sm font-medium text-primary-foreground disabled:opacity-40"
         >
           Save favourite
         </button>
       </div>
 
+      {/* Tabs + list */}
       <h2 className="mt-8 mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
         Your favourites
       </h2>
+
+      <div className="-mx-6 mb-3 overflow-x-auto px-6">
+        <div className="flex gap-2 pb-1">
+          <TabPill
+            active={activeTab === "any"}
+            onClick={() => setActiveTab("any")}
+            label={`All stores (${tabCounts.any ?? 0})`}
+          />
+          {shops.map((sh) => (
+            <TabPill
+              key={sh.id}
+              active={activeTab === sh.id}
+              onClick={() => setActiveTab(sh.id)}
+              label={`${sh.name} (${tabCounts[sh.id] ?? 0})`}
+              color={sh.color}
+            />
+          ))}
+        </div>
+      </div>
+
       <div className="space-y-2 pb-6">
-        {favs.length === 0 && (
+        {filteredFavs.length === 0 && (
           <div className="rounded-3xl bg-card border border-border px-5 py-8 text-center text-sm text-muted-foreground">
-            No favourites yet.
+            {favs.length === 0 ? "No favourites yet." : "Nothing saved for this store yet."}
           </div>
         )}
-        {favs.map((f) => (
+        {filteredFavs.map((f) => (
           <div key={f.id} className="flex items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5">
             <Star className="h-4 w-4 fill-favorite text-favorite" />
             <div className="min-w-0 flex-1">
-              <p className="font-medium">{f.name}</p>
+              <p className="font-medium truncate">{f.name}</p>
               <p className="text-xs text-muted-foreground">
                 {storeName(f.preferredStore)} {f.isLocked && "· 🔒"}
               </p>
@@ -515,6 +604,118 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
             </button>
           </div>
         ))}
+      </div>
+
+      {/* Lock confirmation */}
+      {lockPrompt && (
+        <ModalShell onClose={() => setLockPrompt(false)}>
+          <h3 className="text-lg font-semibold">Lock to {storeName(store)}?</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            This item will only appear in {storeName(store)}'s shopping list.
+          </p>
+          <div className="mt-5 flex gap-2">
+            <button
+              onClick={() => setLockPrompt(false)}
+              className="flex-1 rounded-full bg-secondary py-3 text-sm font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                setLocked(true);
+                setLockPrompt(false);
+              }}
+              className="flex-1 rounded-full bg-primary py-3 text-sm font-medium text-primary-foreground"
+            >
+              Lock it
+            </button>
+          </div>
+        </ModalShell>
+      )}
+
+      {/* Onboarding */}
+      {showOnboarding && (
+        <ModalShell onClose={dismissOnboarding}>
+          <h3 className="text-lg font-semibold">How favourites work</h3>
+          <div className="mt-4 space-y-4">
+            <OnboardingRow icon="🌍" title="Add to any store" body="Item appears on all shopping lists." />
+            <OnboardingRow icon="🏬" title="Choose a store" body="Item appears on all lists, with a reminder of where you usually buy it." />
+            <OnboardingRow icon="🔒" title="Lock to store" body="Item will only appear in that store's list." />
+          </div>
+          <label className="mt-5 flex items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={dontShowAgain}
+              onChange={(e) => setDontShowAgain(e.target.checked)}
+              className="h-4 w-4 rounded border-border"
+            />
+            Don't show again
+          </label>
+          <button
+            onClick={dismissOnboarding}
+            className="mt-5 w-full rounded-full bg-primary py-3 text-sm font-medium text-primary-foreground"
+          >
+            Got it
+          </button>
+        </ModalShell>
+      )}
+    </div>
+  );
+}
+
+function TabPill({
+  active,
+  onClick,
+  label,
+  color,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  color?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
+        active
+          ? "bg-primary text-primary-foreground border-primary"
+          : "bg-card text-foreground border-border"
+      }`}
+    >
+      {color && (
+        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+      )}
+      {label}
+    </button>
+  );
+}
+
+function OnboardingRow({ icon, title, body }: { icon: string; title: string; body: string }) {
+  return (
+    <div className="flex gap-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-secondary text-lg">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="font-medium">{title}</p>
+        <p className="text-sm text-muted-foreground">{body}</p>
+      </div>
+    </div>
+  );
+}
+
+function ModalShell({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-3xl bg-background p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
       </div>
     </div>
   );
