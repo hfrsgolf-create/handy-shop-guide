@@ -418,7 +418,7 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
   const [store, setStore] = useState<StoreId>("any");
   const [locked, setLocked] = useState(false);
   const [lockPrompt, setLockPrompt] = useState(false);
-  const [activeTab, setActiveTab] = useState<StoreId>("any");
+  const [activeTab, setActiveTab] = useState<StoreId | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
 
