@@ -555,58 +555,66 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
       </div>
 
       {/* Tabs + list */}
+      {/* Store selector list */}
       <h2 className="mt-8 mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-        Your favourites
+        View favourites by store
       </h2>
 
-      <div className="-mx-6 mb-3 overflow-x-auto px-6">
-        <div className="flex gap-2 pb-1">
-          <TabPill
-            active={activeTab === "any"}
-            onClick={() => setActiveTab("any")}
-            label={`All stores (${tabCounts.any ?? 0})`}
+      <div className="space-y-2">
+        <StoreRow
+          active={activeTab === "any"}
+          onClick={() => setActiveTab("any")}
+          label="All stores"
+          count={tabCounts.any ?? 0}
+        />
+        {shops.map((sh) => (
+          <StoreRow
+            key={sh.id}
+            active={activeTab === sh.id}
+            onClick={() => setActiveTab(sh.id)}
+            label={sh.name}
+            count={tabCounts[sh.id] ?? 0}
+            color={sh.color}
           />
-          {shops.map((sh) => (
-            <TabPill
-              key={sh.id}
-              active={activeTab === sh.id}
-              onClick={() => setActiveTab(sh.id)}
-              label={`${sh.name} (${tabCounts[sh.id] ?? 0})`}
-              color={sh.color}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-2 pb-6">
-        {filteredFavs.length === 0 && (
-          <div className="rounded-3xl bg-card border border-border px-5 py-8 text-center text-sm text-muted-foreground">
-            {favs.length === 0 ? "No favourites yet." : "Nothing saved for this store yet."}
-          </div>
-        )}
-        {filteredFavs.map((f) => (
-          <div key={f.id} className="flex items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5">
-            <Star className="h-4 w-4 fill-favorite text-favorite" />
-            <div className="min-w-0 flex-1">
-              <p className="font-medium truncate">{f.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {storeName(f.preferredStore)} {f.isLocked && "· 🔒"}
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                toggleFav(f.id);
-                if (f.checked) removeItem(f.id);
-                toast.success("Removed from favourites");
-              }}
-              aria-label="Remove favourite"
-              className="rounded-full p-2 text-muted-foreground"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
         ))}
       </div>
+
+      {activeTab !== null && (
+        <>
+          <h2 className="mt-8 mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+            {activeTab === "any" ? "All favourites" : `${storeName(activeTab)} favourites`}
+          </h2>
+          <div className="space-y-2 pb-6">
+            {filteredFavs.length === 0 && (
+              <div className="rounded-3xl bg-card border border-border px-5 py-8 text-center text-sm text-muted-foreground">
+                {favs.length === 0 ? "No favourites yet." : "Nothing saved for this store yet."}
+              </div>
+            )}
+            {filteredFavs.map((f) => (
+              <div key={f.id} className="flex items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5">
+                <Star className="h-4 w-4 fill-favorite text-favorite" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium truncate">{f.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {storeName(f.preferredStore)} {f.isLocked && "· 🔒"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    toggleFav(f.id);
+                    if (f.checked) removeItem(f.id);
+                    toast.success("Removed from favourites");
+                  }}
+                  aria-label="Remove favourite"
+                  className="rounded-full p-2 text-muted-foreground"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Lock confirmation */}
       {lockPrompt && (
