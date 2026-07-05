@@ -38,8 +38,10 @@ type Screen =
   | { name: "store"; storeId: Exclude<StoreId, "any"> }
   | { name: "addItem" }
   | { name: "favourites" }
+  | { name: "storeFavourites"; storeId: StoreId }
   | { name: "manageShops" }
   | { name: "masterList" };
+
 
 export function ShopApp() {
   const { profile } = useAuth();
