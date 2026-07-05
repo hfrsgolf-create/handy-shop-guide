@@ -97,6 +97,7 @@ export function ShopApp() {
         )}
         {screen.name === "addItem" && <AddItemScreen go={go} />}
         {screen.name === "favourites" && <FavouritesScreen go={go} />}
+        {screen.name === "storeFavourites" && <StoreFavouritesScreen storeId={screen.storeId} go={go} />}
         {screen.name === "manageShops" && <ManageShopsScreen go={go} />}
         {screen.name === "masterList" && <MasterListScreen go={go} onEditDeal={setEditingDealFor} />}
       </main>
