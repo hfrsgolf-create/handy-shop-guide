@@ -115,47 +115,113 @@ function HomeScreen({ go }: { go: (s: Screen) => void }) {
   const { profile } = useAuth();
   const firstName = profile?.name?.split(" ")[0] || "there";
 
-  const actions: { id: Screen["name"]; title: string; sub: string; icon: React.ComponentType<{ className?: string }>; tone: string }[] = [
-    { id: "goShopping", title: "Go shopping", sub: "Pick a store and start ticking off", icon: ShoppingBasket, tone: "bg-primary text-primary-foreground" },
-    { id: "addItem", title: "Add to list", sub: "Type or pick from favourites", icon: Plus, tone: "bg-card border border-border shadow-card" },
-    { id: "favourites", title: "Add favourites", sub: "Save items you buy often", icon: Star, tone: "bg-card border border-border shadow-card" },
-    { id: "manageShops", title: "Manage shops", sub: "Reorder or add new stores", icon: StoreIcon, tone: "bg-card border border-border shadow-card" },
-    { id: "masterList", title: "View shopping list", sub: "Everything to buy in one place", icon: ListChecks, tone: "bg-card border border-border shadow-card" },
+  type Action = {
+    id: Screen["name"];
+    title: string;
+    sub: string;
+    icon: React.ComponentType<{ className?: string }>;
+    cardBg: string;
+    iconBg: string;
+    iconFg: string;
+    titleColor: string;
+    subColor: string;
+    chevronColor: string;
+  };
+
+  const actions: Action[] = [
+    {
+      id: "goShopping",
+      title: "Go shopping",
+      sub: "Pick a store and start ticking off items",
+      icon: ShoppingBasket,
+      cardBg: "bg-[#1f3d2b] shadow-card",
+      iconBg: "bg-white/10",
+      iconFg: "text-white",
+      titleColor: "text-white",
+      subColor: "text-white/75",
+      chevronColor: "text-white/70",
+    },
+    {
+      id: "addItem",
+      title: "Add to list",
+      sub: "Type or pick from your favourites",
+      icon: Plus,
+      cardBg: "bg-[#e6efe4]",
+      iconBg: "bg-[#2f6b3f]",
+      iconFg: "text-white",
+      titleColor: "text-foreground",
+      subColor: "text-muted-foreground",
+      chevronColor: "text-muted-foreground",
+    },
+    {
+      id: "masterList",
+      title: "View shopping list",
+      sub: "Everything you need to buy",
+      icon: ListChecks,
+      cardBg: "bg-[#efe7f7]",
+      iconBg: "bg-[#7c5cc4]/15",
+      iconFg: "text-[#6a48b8]",
+      titleColor: "text-foreground",
+      subColor: "text-muted-foreground",
+      chevronColor: "text-muted-foreground",
+    },
+    {
+      id: "favourites",
+      title: "Add favourites",
+      sub: "Save items you buy often",
+      icon: Star,
+      cardBg: "bg-[#fbecc9]",
+      iconBg: "bg-[#e0a94a]/25",
+      iconFg: "text-[#b57e1c]",
+      titleColor: "text-foreground",
+      subColor: "text-muted-foreground",
+      chevronColor: "text-muted-foreground",
+    },
+    {
+      id: "manageShops",
+      title: "Manage shops",
+      sub: "Reorder or add new stores",
+      icon: StoreIcon,
+      cardBg: "bg-[#e2ecf7]",
+      iconBg: "bg-[#4a76b8]/15",
+      iconFg: "text-[#3a68b0]",
+      titleColor: "text-foreground",
+      subColor: "text-muted-foreground",
+      chevronColor: "text-muted-foreground",
+    },
   ];
 
   return (
     <div className="px-6 pt-16">
       <header>
-        <p className="text-sm text-muted-foreground">Hi {firstName},</p>
+        <p className="text-sm font-medium text-[#2f6b3f]">Hi {firstName} <span className="ml-0.5">👋</span></p>
         <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-tight">
           What do you want to do today?
         </h1>
       </header>
 
-      <div className="mt-8 space-y-3">
+      <div className="mt-6 space-y-3">
         {actions.map((a) => (
           <button
             key={a.id}
             onClick={() => go({ name: a.id } as Screen)}
-            className={`flex w-full items-center justify-between rounded-3xl px-6 py-6 text-left transition active:scale-[0.99] ${a.tone}`}
+            className={`flex w-full items-center gap-4 rounded-3xl px-5 py-5 text-left transition active:scale-[0.99] ${a.cardBg}`}
           >
-            <div className="min-w-0 pr-3">
-              <p className="text-[19px] font-semibold leading-tight">{a.title}</p>
-              <p className={`mt-1 text-sm ${a.tone.includes("primary-foreground") ? "opacity-80" : "text-muted-foreground"}`}>
-                {a.sub}
-              </p>
+            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${a.iconBg}`}>
+              <a.icon className={`h-5 w-5 ${a.iconFg}`} />
             </div>
-            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
-              a.tone.includes("primary-foreground") ? "bg-primary-foreground/15" : "bg-secondary"
-            }`}>
-              <a.icon className="h-5 w-5" />
+            <div className="min-w-0 flex-1">
+              <p className={`text-[17px] font-semibold leading-tight ${a.titleColor}`}>{a.title}</p>
+              <p className={`mt-1 text-sm leading-snug ${a.subColor}`}>{a.sub}</p>
             </div>
+            <ChevronRight className={`h-5 w-5 shrink-0 ${a.chevronColor}`} />
           </button>
         ))}
       </div>
     </div>
   );
 }
+
 
 /* ---------- GO SHOPPING ---------- */
 
