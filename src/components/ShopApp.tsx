@@ -412,8 +412,6 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
   const shops = useGuaranteedShops();
   const items = useShop((s) => s.items);
   const addItem = useShop((s) => s.addItem);
-  const toggleFav = useShop((s) => s.toggleFav);
-  const removeItem = useShop((s) => s.removeItem);
   const favs = items.filter((i) => i.favorite);
 
   const [brand, setBrand] = useState("");
@@ -421,7 +419,6 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
   const [store, setStore] = useState<StoreId>("any");
   const [locked, setLocked] = useState(false);
   const [lockPrompt, setLockPrompt] = useState(false);
-  const [activeTab, setActiveTab] = useState<StoreId | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
 
@@ -453,13 +450,13 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
     setLocked(false);
   };
 
-  const onToggleLock = () => {
-    if (store === "any") {
-      toast.error("Select a store first to lock this favourite.");
+  const requestLockToggle = (next: boolean) => {
+    if (!next) {
+      setLocked(false);
       return;
     }
-    if (locked) {
-      setLocked(false);
+    if (store === "any") {
+      toast.error("Select a store first to lock this favourite.");
       return;
     }
     setLockPrompt(true);
@@ -473,12 +470,8 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
     return counts;
   }, [favs, shops]);
 
-  const filteredFavs =
-    activeTab === null || activeTab === "any"
-      ? favs
-      : favs.filter((f) => f.preferredStore === activeTab);
-
   const canSubmit = (brand.trim() + product.trim()).length > 0;
+  const lockActive = locked && store !== "any";
 
   return (
     <div className="px-6 pt-14">
@@ -512,41 +505,52 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
 
         <div className="space-y-2">
           <label className="block text-xs font-medium text-muted-foreground">Select store</label>
-          <div className="flex items-center gap-2">
-            <select
-              value={store}
-              onChange={(e) => {
-                const v = e.target.value as StoreId;
-                setStore(v);
-                if (v === "any") setLocked(false);
-              }}
-              className="flex-1 rounded-2xl bg-secondary px-4 py-3 text-base outline-none focus:ring-2 focus:ring-ring appearance-none"
-            >
-              <option value="any">Any store</option>
-              {shops.map((sh) => (
-                <option key={sh.id} value={sh.id}>
-                  {sh.name}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={onToggleLock}
-              aria-label={locked ? "Unlock store" : "Lock to store"}
-              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border transition ${
-                locked
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-secondary border-border text-muted-foreground"
-              } ${store === "any" ? "opacity-50" : ""}`}
-            >
-              <Lock className="h-4 w-4" />
-            </button>
-          </div>
-          {locked && store !== "any" && (
-            <p className="text-xs text-muted-foreground">
-              🔒 Locked — only appears in {storeName(store)}'s list.
-            </p>
-          )}
+          <select
+            value={store}
+            onChange={(e) => {
+              const v = e.target.value as StoreId;
+              setStore(v);
+              if (v === "any") setLocked(false);
+            }}
+            className="w-full rounded-2xl bg-secondary px-4 py-3 text-base outline-none focus:ring-2 focus:ring-ring appearance-none"
+          >
+            <option value="any">Any store</option>
+            {shops.map((sh) => (
+              <option key={sh.id} value={sh.id}>
+                {sh.name}
+              </option>
+            ))}
+          </select>
         </div>
+
+        {/* Lock to store toggle row */}
+        <button
+          type="button"
+          onClick={() => requestLockToggle(!lockActive)}
+          className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${
+            lockActive
+              ? "bg-accent border-primary/40"
+              : "bg-secondary border-transparent"
+          }`}
+        >
+          <span className={`flex items-center gap-2 text-sm ${lockActive ? "font-semibold text-primary" : "font-medium text-foreground"}`}>
+            {lockActive && <Lock className="h-3.5 w-3.5" />}
+            Lock to store
+          </span>
+          <span
+            role="switch"
+            aria-checked={lockActive}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
+              lockActive ? "bg-primary" : "bg-border"
+            }`}
+          >
+            <span
+              className={`inline-block h-5 w-5 transform rounded-full bg-background shadow transition ${
+                lockActive ? "translate-x-5" : "translate-x-0.5"
+              }`}
+            />
+          </span>
+        </button>
 
         <button
           onClick={submit}
@@ -557,24 +561,21 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
         </button>
       </div>
 
-      {/* Tabs + list */}
       {/* Store selector list */}
       <h2 className="mt-8 mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
         View favourites by store
       </h2>
 
-      <div className="space-y-2">
-        <StoreRow
-          active={activeTab === "any"}
-          onClick={() => setActiveTab("any")}
+      <div className="space-y-3 pb-6">
+        <FavStoreRow
+          onClick={() => go({ name: "storeFavourites", storeId: "any" })}
           label="All stores"
           count={tabCounts.any ?? 0}
         />
         {shops.map((sh) => (
-          <StoreRow
+          <FavStoreRow
             key={sh.id}
-            active={activeTab === sh.id}
-            onClick={() => setActiveTab(sh.id)}
+            onClick={() => go({ name: "storeFavourites", storeId: sh.id })}
             label={sh.name}
             count={tabCounts[sh.id] ?? 0}
             color={sh.color}
@@ -582,49 +583,12 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
         ))}
       </div>
 
-      {activeTab !== null && (
-        <>
-          <h2 className="mt-8 mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-            {activeTab === "any" ? "All favourites" : `${storeName(activeTab)} favourites`}
-          </h2>
-          <div className="space-y-2 pb-6">
-            {filteredFavs.length === 0 && (
-              <div className="rounded-3xl bg-card border border-border px-5 py-8 text-center text-sm text-muted-foreground">
-                {favs.length === 0 ? "No favourites yet." : "Nothing saved for this store yet."}
-              </div>
-            )}
-            {filteredFavs.map((f) => (
-              <div key={f.id} className="flex items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5">
-                <Star className="h-4 w-4 fill-favorite text-favorite" />
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium truncate">{f.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {storeName(f.preferredStore)} {f.isLocked && "· 🔒"}
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    toggleFav(f.id);
-                    if (f.checked) removeItem(f.id);
-                    toast.success("Removed from favourites");
-                  }}
-                  aria-label="Remove favourite"
-                  className="rounded-full p-2 text-muted-foreground"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
       {/* Lock confirmation */}
       {lockPrompt && (
         <ModalShell onClose={() => setLockPrompt(false)}>
           <h3 className="text-lg font-semibold">Lock to {storeName(store)}?</h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            This item will only appear in {storeName(store)}'s shopping list.
+            This item will only appear in the selected store's shopping list.
           </p>
           <div className="mt-5 flex gap-2">
             <button
@@ -640,7 +604,7 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
               }}
               className="flex-1 rounded-full bg-primary py-3 text-sm font-medium text-primary-foreground"
             >
-              Lock it
+              Confirm
             </button>
           </div>
         </ModalShell>
@@ -651,9 +615,9 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
         <ModalShell onClose={dismissOnboarding}>
           <h3 className="text-lg font-semibold">How favourites work</h3>
           <div className="mt-4 space-y-4">
-            <OnboardingRow icon="🌍" title="Add to any store" body="Item appears on all shopping lists." />
-            <OnboardingRow icon="🏬" title="Choose a store" body="Item appears on all lists, with a reminder of where you usually buy it." />
-            <OnboardingRow icon="🔒" title="Lock to store" body="Item will only appear in that store's list." />
+            <OnboardingRow icon="🌍" title="Add to Any Store" body="Item appears on all shopping lists." />
+            <OnboardingRow icon="🏬" title="Choose a Store" body="Item appears on all lists, with a reminder of where you usually buy it." />
+            <OnboardingRow icon="🔒" title="Lock to Store" body="Item will only appear in that store's list." />
           </div>
           <label className="mt-5 flex items-center gap-2 text-sm text-muted-foreground">
             <input
@@ -675,6 +639,89 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
     </div>
   );
 }
+
+/* ---------- STORE FAVOURITES (dedicated screen) ---------- */
+
+function StoreFavouritesScreen({ storeId, go }: { storeId: StoreId; go: (s: Screen) => void }) {
+  const items = useShop((s) => s.items);
+  const toggleFav = useShop((s) => s.toggleFav);
+  const removeItem = useShop((s) => s.removeItem);
+  const favs = items.filter((i) => i.favorite);
+  const list = storeId === "any" ? favs : favs.filter((f) => f.preferredStore === storeId);
+  const title = storeId === "any" ? "All favourites" : `${storeName(storeId)} favourites`;
+
+  return (
+    <div className="px-6 pt-14">
+      <BackHeader go={go} to={{ name: "favourites" }} label="Favourites" />
+      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">{title}</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {list.length} {list.length === 1 ? "item" : "items"}
+      </p>
+
+      <div className="mt-6 space-y-2 pb-6">
+        {list.length === 0 && (
+          <div className="rounded-3xl bg-card border border-border px-5 py-8 text-center text-sm text-muted-foreground">
+            {favs.length === 0 ? "No favourites yet." : "Nothing saved for this store yet."}
+          </div>
+        )}
+        {list.map((f) => (
+          <div key={f.id} className="flex items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5">
+            <Star className="h-4 w-4 fill-favorite text-favorite" />
+            <div className="min-w-0 flex-1">
+              <p className="font-medium truncate">{f.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {storeName(f.preferredStore)} {f.isLocked && "· 🔒"}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                toggleFav(f.id);
+                if (f.checked) removeItem(f.id);
+                toast.success("Removed from favourites");
+              }}
+              aria-label="Remove favourite"
+              className="rounded-full p-2 text-muted-foreground"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FavStoreRow({
+  onClick,
+  label,
+  count,
+  color,
+}: {
+  onClick: () => void;
+  label: string;
+  count: number;
+  color?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex w-full items-center gap-4 rounded-3xl bg-card border border-border shadow-card px-5 py-5 text-left transition active:scale-[0.99]"
+    >
+      <span
+        className="h-12 w-12 shrink-0 rounded-2xl"
+        style={{ backgroundColor: color ?? "hsl(var(--secondary))" }}
+      />
+      <div className="min-w-0 flex-1">
+        <p className="text-[17px] font-semibold leading-tight truncate">{label}</p>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          {count} {count === 1 ? "item" : "items"}
+        </p>
+      </div>
+      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+    </button>
+  );
+}
+
 
 function StoreRow({
   active,
