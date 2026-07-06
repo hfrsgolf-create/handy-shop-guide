@@ -638,6 +638,7 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
           onClick={() => go({ name: "storeFavourites", storeId: "any" })}
           label="All stores"
           count={tabCounts.any ?? 0}
+          isAll
         />
         {shops.map((sh) => (
           <FavStoreRow
