@@ -263,9 +263,9 @@ function GoShoppingScreen({ go }: { go: (s: Screen) => void }) {
             <button
               key={id}
               onClick={() => go({ name: "store", storeId: id })}
-              className="flex w-full items-center gap-4 rounded-3xl bg-card border border-border shadow-card px-5 py-6 text-left transition active:scale-[0.99]"
+              className="flex w-full items-center gap-3 rounded-3xl bg-card border border-border shadow-card px-5 py-5 text-left transition-transform duration-150 ease-out active:scale-[0.96]"
             >
-              <span className="h-14 w-14 shrink-0 rounded-2xl" style={{ backgroundColor: store.color }} />
+              <StoreLogo storeName={store.name} size={44} />
               <div className="min-w-0 flex-1">
                 <p className="text-[19px] font-semibold leading-tight">{store.name}</p>
                 <p className="mt-1 text-sm text-muted-foreground">
