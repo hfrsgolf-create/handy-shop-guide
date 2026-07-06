@@ -762,25 +762,33 @@ function FavStoreRow({
   onClick,
   label,
   count,
-  color,
+  isAll,
 }: {
   onClick: () => void;
   label: string;
   count: number;
   color?: string;
+  isAll?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-4 rounded-3xl bg-card border border-border shadow-card px-5 py-5 text-left transition active:scale-[0.99]"
+      className="flex w-full items-center gap-3 rounded-3xl bg-card border border-border shadow-card px-4 py-4 text-left transition-transform duration-150 ease-out active:scale-[0.96]"
     >
-      <span
-        className="h-12 w-12 shrink-0 rounded-2xl"
-        style={{ backgroundColor: color ?? "hsl(var(--secondary))" }}
-      />
+      {isAll ? (
+        <span
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold"
+          style={{ background: "#f2f2f2", color: "#555", border: "1px solid rgba(0,0,0,0.05)" }}
+          aria-hidden
+        >
+          ★
+        </span>
+      ) : (
+        <StoreLogo storeName={label} />
+      )}
       <div className="min-w-0 flex-1">
-        <p className="text-[17px] font-semibold leading-tight truncate">{label}</p>
-        <p className="mt-0.5 text-sm text-muted-foreground">
+        <p className="text-[16px] font-semibold leading-tight truncate">{label}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
           {count} {count === 1 ? "item" : "items"}
         </p>
       </div>
