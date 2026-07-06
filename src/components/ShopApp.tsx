@@ -254,7 +254,7 @@ function GoShoppingScreen({ go }: { go: (s: Screen) => void }) {
       <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Where are you shopping?</h1>
       <p className="mt-1 text-sm text-muted-foreground">Tap a shop to see what to buy there.</p>
 
-      <div className="mt-8 space-y-3">
+      <div className="mt-8 space-y-2.5">
         {shops.map((store) => {
           const id = store.id;
           const visible = items.filter((it) => !it.checked && (it.preferredStore === id || (!it.isLocked && it.preferredStore !== "any") || it.preferredStore === "any"));
@@ -263,12 +263,13 @@ function GoShoppingScreen({ go }: { go: (s: Screen) => void }) {
             <button
               key={id}
               onClick={() => go({ name: "store", storeId: id })}
-              className="flex w-full items-center gap-3 rounded-3xl bg-card border border-border shadow-card px-5 py-5 text-left transition-transform duration-150 ease-out active:scale-[0.96]"
+              style={{ boxShadow: "0 2px 6px rgba(0,0,0,0.05)" }}
+              className="flex w-full items-center gap-2.5 rounded-2xl bg-white border border-black/5 px-3.5 py-3 text-left transition-transform duration-150 ease-out active:scale-[0.97]"
             >
               <StoreLogo storeName={store.name} size={44} />
               <div className="min-w-0 flex-1">
-                <p className="text-[19px] font-semibold leading-tight">{store.name}</p>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="text-[16px] font-semibold leading-tight truncate">{store.name}</p>
+                <p className="mt-0.5 text-[13px] text-muted-foreground">
                   {visible.length} {visible.length === 1 ? "item" : "items"}
                   {deals > 0 && <span className="text-deal"> · 🔥 {deals} on offer</span>}
                 </p>

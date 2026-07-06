@@ -1,5 +1,7 @@
-// Store logo system — consistent 36px container used everywhere a shop appears.
-// Uses inline SVG monograms so no binary assets are needed and rendering is instant.
+// Store logo system — real brand wordmarks rendered as inline SVG so they
+// load locally, cache instantly, and never cause layout shift.
+
+import type { CSSProperties, ReactNode } from "react";
 
 export type StoreKey =
   | "asda"
@@ -11,26 +13,6 @@ export type StoreKey =
   | "tesco"
   | "marksandspencer"
   | "default";
-
-type LogoSpec = {
-  key: StoreKey;
-  label: string; // short monogram
-  bg: string; // brand background
-  fg: string; // text/mark color
-  isLight: boolean; // treat as light logo (needs dark container)
-};
-
-const LOGO_MAP: Record<StoreKey, LogoSpec> = {
-  asda:            { key: "asda",            label: "Asda",   bg: "#7DC242", fg: "#ffffff", isLight: false },
-  costco:          { key: "costco",          label: "Costco", bg: "#E31837", fg: "#005DAA",  isLight: false },
-  morrisons:       { key: "morrisons",       label: "Morrisons", bg: "#00833E", fg: "#FFD400", isLight: false },
-  lidl:            { key: "lidl",            label: "Lidl",   bg: "#FFF200", fg: "#0050AA", isLight: true  },
-  aldi:            { key: "aldi",            label: "Aldi",   bg: "#00549A", fg: "#F5B000",  isLight: false },
-  sainsburys:      { key: "sainsburys",      label: "Sainsbury's", bg: "#F06C00", fg: "#ffffff", isLight: false },
-  tesco:           { key: "tesco",           label: "Tesco",  bg: "#00539F", fg: "#ffffff", isLight: false },
-  marksandspencer: { key: "marksandspencer", label: "M&S",    bg: "#000000", fg: "#ffffff", isLight: true  },
-  default:         { key: "default",         label: "Shop",   bg: "#f2f2f2", fg: "#888888",   isLight: false },
-};
 
 /** Normalize + smart-match a free-text shop name to a known brand key. */
 export function getStoreKey(storeName: string | null | undefined): StoreKey {
@@ -48,79 +30,182 @@ export function getStoreKey(storeName: string | null | undefined): StoreKey {
   return "default";
 }
 
-export function getLogoSpec(storeName: string | null | undefined): LogoSpec {
-  return LOGO_MAP[getStoreKey(storeName)];
-}
+type BrandMark = {
+  render: () => ReactNode;
+  /** true when the logo is mostly white/very light and needs a dark tile. */
+  isLight: boolean;
+};
 
-// Tiny monogram — first 1-2 letters of the label.
-function monogram(label: string): string {
-  const cleaned = label.replace(/[^A-Za-z&]/g, "");
-  if (label === "M&S") return "M&S";
-  if (cleaned.length <= 2) return cleaned.toUpperCase();
-  return cleaned.slice(0, 1).toUpperCase();
-}
+// Each mark uses a 100×100 viewBox and preserveAspectRatio="xMidYMid meet"
+// so object-fit: contain semantics apply naturally inside the tile.
+const wordmark = (
+  text: string,
+  color: string,
+  opts: { bg?: string; italic?: boolean; weight?: number; fontSize?: number } = {},
+) => (
+  <svg
+    viewBox="0 0 100 40"
+    width="100%"
+    height="100%"
+    preserveAspectRatio="xMidYMid meet"
+    aria-hidden="true"
+  >
+    {opts.bg && <rect width="100" height="40" rx="4" fill={opts.bg} />}
+    <text
+      x="50"
+      y="27"
+      textAnchor="middle"
+      fill={color}
+      fontFamily="'Helvetica Neue', Arial, sans-serif"
+      fontWeight={opts.weight ?? 800}
+      fontStyle={opts.italic ? "italic" : "normal"}
+      fontSize={opts.fontSize ?? 20}
+      letterSpacing="-0.5"
+    >
+      {text}
+    </text>
+  </svg>
+);
+
+const MARKS: Record<Exclude<StoreKey, "default">, BrandMark> = {
+  tesco: {
+    isLight: false,
+    render: () => wordmark("TESCO", "#00539F", { italic: true, fontSize: 22 }),
+  },
+  sainsburys: {
+    isLight: false,
+    render: () => wordmark("Sainsbury's", "#F06C00", { fontSize: 14 }),
+  },
+  asda: {
+    isLight: false,
+    render: () => wordmark("ASDA", "#7DC242", { fontSize: 22 }),
+  },
+  morrisons: {
+    isLight: false,
+    render: () => wordmark("Morrisons", "#00833E", { fontSize: 14 }),
+  },
+  lidl: {
+    isLight: false,
+    render: () => (
+      <svg viewBox="0 0 40 40" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <rect width="40" height="40" rx="3" fill="#0050AA" />
+        <rect x="2" y="2" width="36" height="36" rx="2" fill="#FFF200" />
+        <text
+          x="20"
+          y="27"
+          textAnchor="middle"
+          fill="#E60012"
+          fontFamily="'Helvetica Neue', Arial, sans-serif"
+          fontWeight="900"
+          fontSize="16"
+          fontStyle="italic"
+        >
+          Lidl
+        </text>
+      </svg>
+    ),
+  },
+  aldi: {
+    isLight: false,
+    render: () => (
+      <svg viewBox="0 0 100 40" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <text
+          x="50"
+          y="27"
+          textAnchor="middle"
+          fontFamily="'Helvetica Neue', Arial, sans-serif"
+          fontWeight="900"
+          fontSize="22"
+          letterSpacing="-0.5"
+        >
+          <tspan fill="#00549A">AL</tspan>
+          <tspan fill="#F5B000">DI</tspan>
+        </text>
+      </svg>
+    ),
+  },
+  costco: {
+    isLight: false,
+    render: () => (
+      <svg viewBox="0 0 100 40" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <text
+          x="50"
+          y="27"
+          textAnchor="middle"
+          fontFamily="'Helvetica Neue', Arial, sans-serif"
+          fontWeight="900"
+          fontSize="20"
+          letterSpacing="-0.5"
+        >
+          <tspan fill="#005DAA">CO</tspan>
+          <tspan fill="#E31837">ST</tspan>
+          <tspan fill="#005DAA">CO</tspan>
+        </text>
+      </svg>
+    ),
+  },
+  marksandspencer: {
+    isLight: true,
+    render: () => wordmark("M&S", "#ffffff", { fontSize: 22 }),
+  },
+};
 
 export type StoreLogoProps = {
   storeName?: string | null;
-  /** Override the pixel size of the container. Defaults to 36. */
-  size?: number;
+  size?: number; // pixel size of the tile
   className?: string;
+  style?: CSSProperties;
 };
 
-/** Consistent 36×36 logo container used across shop tabs, favourites & lists. */
-export function StoreLogo({ storeName, size = 36, className }: StoreLogoProps) {
-  const spec = getLogoSpec(storeName);
-  const isDefault = spec.key === "default";
-  const containerBg = isDefault ? "#f2f2f2" : spec.isLight ? "#1f1f1f" : "#ffffff";
-  const padding = spec.isLight ? 6 : 4;
+/** Consistent logo tile used across shop tabs, favourites & lists. */
+export function StoreLogo({ storeName, size = 44, className, style }: StoreLogoProps) {
+  const key = getStoreKey(storeName);
+  const mark = key === "default" ? null : MARKS[key];
+  const isLight = mark?.isLight ?? false;
 
-  const label = storeName || spec.label;
-  const mark = monogram(spec.label);
+  // Fallback tile — initial on soft grey, matches the "old style".
+  if (!mark) {
+    const letter = (storeName || "?").trim().charAt(0).toUpperCase() || "?";
+    return (
+      <span
+        className={`inline-flex shrink-0 items-center justify-center overflow-hidden transition-transform duration-150 ease-out active:scale-[0.97] animate-in fade-in ${className ?? ""}`}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: 10,
+          background: "#f2f2f2",
+          border: "1px solid rgba(0,0,0,0.06)",
+          padding: 6,
+          color: "#888",
+          fontWeight: 800,
+          fontSize: size * 0.42,
+          lineHeight: 1,
+          ...style,
+        }}
+        role="img"
+        aria-label={`${storeName ?? "Shop"} logo`}
+      >
+        {letter}
+      </span>
+    );
+  }
 
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center overflow-hidden transition-transform duration-150 ease-out active:scale-95 animate-in fade-in duration-200 ${className ?? ""}`}
+      className={`inline-flex shrink-0 items-center justify-center overflow-hidden transition-transform duration-150 ease-out active:scale-[0.97] animate-in fade-in ${className ?? ""}`}
       style={{
         width: size,
         height: size,
-        borderRadius: 8,
-        background: containerBg,
-        border: "1px solid rgba(0,0,0,0.05)",
-        padding,
+        borderRadius: 10,
+        background: isLight ? "#1f1f1f" : "#ffffff",
+        border: "1px solid rgba(0,0,0,0.06)",
+        padding: 6,
+        ...style,
       }}
       role="img"
-      aria-label={`${label} logo`}
+      aria-label={`${storeName ?? key} logo`}
     >
-      {isDefault ? (
-        <svg viewBox="0 0 24 24" fill="none" width="70%" height="70%" aria-hidden="true">
-          <path
-            d="M4 8h16l-1.2 10.2a2 2 0 0 1-2 1.8H7.2a2 2 0 0 1-2-1.8L4 8Zm4 0V6a4 4 0 0 1 8 0v2"
-            stroke="#888"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      ) : (
-        <span
-          style={{
-            display: "flex",
-            width: "100%",
-            height: "100%",
-            alignItems: "center",
-            justifyContent: "center",
-            background: spec.bg,
-            color: spec.fg,
-            borderRadius: 4,
-            fontWeight: 800,
-            fontSize: mark.length > 2 ? size * 0.28 : size * 0.42,
-            letterSpacing: mark.length > 2 ? "-0.02em" : 0,
-            lineHeight: 1,
-          }}
-        >
-          {mark}
-        </span>
-      )}
+      {mark.render()}
     </span>
   );
 }
