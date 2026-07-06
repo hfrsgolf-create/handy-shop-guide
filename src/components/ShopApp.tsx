@@ -31,6 +31,7 @@ import { useShops, FREE_SHOP_LIMIT, SHOP_COLOR_PRESETS, FALLBACK_SHOPS, type Sho
 import { useUserShops } from "@/lib/user-shops";
 import { supabase } from "@/integrations/supabase/client";
 import { Pencil, Sparkles } from "lucide-react";
+import { StoreLogo } from "@/lib/store-logos";
 
 type Screen =
   | { name: "home" }
@@ -262,9 +263,9 @@ function GoShoppingScreen({ go }: { go: (s: Screen) => void }) {
             <button
               key={id}
               onClick={() => go({ name: "store", storeId: id })}
-              className="flex w-full items-center gap-4 rounded-3xl bg-card border border-border shadow-card px-5 py-6 text-left transition active:scale-[0.99]"
+              className="flex w-full items-center gap-3 rounded-3xl bg-card border border-border shadow-card px-5 py-5 text-left transition-transform duration-150 ease-out active:scale-[0.96]"
             >
-              <span className="h-14 w-14 shrink-0 rounded-2xl" style={{ backgroundColor: store.color }} />
+              <StoreLogo storeName={store.name} size={44} />
               <div className="min-w-0 flex-1">
                 <p className="text-[19px] font-semibold leading-tight">{store.name}</p>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -314,8 +315,8 @@ function StoreScreen({
   return (
     <div className="px-6 pt-14">
       <BackHeader go={go} to={{ name: "goShopping" }} label="Shops" />
-      <div className="mt-3 flex items-center gap-4">
-        <span className="h-14 w-14 shrink-0 rounded-2xl" style={{ backgroundColor: store.color }} />
+      <div className="mt-3 flex items-center gap-3">
+        <StoreLogo storeName={store.name} size={44} />
         <div className="min-w-0">
           <h1 className="text-[28px] font-semibold tracking-tight">{store.name}</h1>
           <p className="text-sm text-muted-foreground">{visible.length} items available</p>
@@ -637,6 +638,7 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
           onClick={() => go({ name: "storeFavourites", storeId: "any" })}
           label="All stores"
           count={tabCounts.any ?? 0}
+          isAll
         />
         {shops.map((sh) => (
           <FavStoreRow
@@ -761,25 +763,33 @@ function FavStoreRow({
   onClick,
   label,
   count,
-  color,
+  isAll,
 }: {
   onClick: () => void;
   label: string;
   count: number;
   color?: string;
+  isAll?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-4 rounded-3xl bg-card border border-border shadow-card px-5 py-5 text-left transition active:scale-[0.99]"
+      className="flex w-full items-center gap-3 rounded-3xl bg-card border border-border shadow-card px-4 py-4 text-left transition-transform duration-150 ease-out active:scale-[0.96]"
     >
-      <span
-        className="h-12 w-12 shrink-0 rounded-2xl"
-        style={{ backgroundColor: color ?? "hsl(var(--secondary))" }}
-      />
+      {isAll ? (
+        <span
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold"
+          style={{ background: "#f2f2f2", color: "#555", border: "1px solid rgba(0,0,0,0.05)" }}
+          aria-hidden
+        >
+          ★
+        </span>
+      ) : (
+        <StoreLogo storeName={label} />
+      )}
       <div className="min-w-0 flex-1">
-        <p className="text-[17px] font-semibold leading-tight truncate">{label}</p>
-        <p className="mt-0.5 text-sm text-muted-foreground">
+        <p className="text-[16px] font-semibold leading-tight truncate">{label}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
           {count} {count === 1 ? "item" : "items"}
         </p>
       </div>
@@ -914,13 +924,7 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
             key={s.id}
             className="flex items-center gap-3 rounded-3xl bg-card border border-border shadow-card px-4 py-4"
           >
-            <span
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-semibold text-white"
-              style={{ backgroundColor: s.color }}
-              aria-hidden
-            >
-              {s.name.charAt(0).toUpperCase()}
-            </span>
+            <StoreLogo storeName={s.name} size={40} />
             <p className="min-w-0 flex-1 truncate text-[15px] font-semibold">{s.name}</p>
             <div className="flex items-center">
               <IconBtn aria-label="Move up" disabled={i === 0} onClick={() => move(s.id, -1)}>
