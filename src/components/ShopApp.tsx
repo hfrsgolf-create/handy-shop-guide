@@ -1300,9 +1300,15 @@ function DealSheet({ item, onClose }: { item: Item; onClose: () => void }) {
             return (
               <div className="flex flex-col items-start gap-2">
                 {shops.map((sh) => (
-                  <ChoiceChip widthCh={widthCh} key={sh.id} selected={store === sh.id} onClick={() => setStore(sh.id)}>
-                    {sh.name}
-                  </ChoiceChip>
+                  <StoreTab
+                    key={sh.id}
+                    widthCh={widthCh}
+                    id={sh.id}
+                    name={sh.name}
+                    color={sh.color}
+                    selected={store === sh.id}
+                    onClick={() => setStore(sh.id)}
+                  />
                 ))}
               </div>
             );
