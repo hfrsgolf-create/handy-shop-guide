@@ -2,6 +2,7 @@
 // coloured-tile fallback for custom/user-created stores or broken images.
 
 import { useEffect, useState, type CSSProperties } from "react";
+import { Check, ChevronRight } from "lucide-react";
 
 export const DEFAULT_SHOP_COLOR = "#94a3b8";
 
@@ -322,5 +323,4 @@ export function StoreTab({ name, id, color, selected, onClick, className }: Stor
       className={className}
     />
   );
-}
 }
