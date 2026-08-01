@@ -27,10 +27,10 @@ export const SHOP_COLOR_PRESETS: { name: string; value: string }[] = [
 ];
 
 const DEFAULT_SHOPS: Omit<Shop, "orderIndex">[] = [
-  { id: "tesco", name: "Tesco", color: "#1f4ea1", isDefault: true },
-  { id: "sainsburys", name: "Sainsbury's", color: "#e8782d", isDefault: true },
-  { id: "lidl", name: "Lidl", color: "#d4202a", isDefault: true },
-  { id: "aldi", name: "Aldi", color: "#1c3a6e", isDefault: true },
+  { id: "tesco", name: "Tesco", color: "#EB001B", isDefault: true },
+  { id: "sainsburys", name: "Sainsbury's", color: "#FF7F00", isDefault: true },
+  { id: "lidl", name: "Lidl", color: "#0050AA", isDefault: true },
+  { id: "aldi", name: "Aldi", color: "#1C3F94", isDefault: true },
 ];
 
 /** Fallback shops rendered when shared state is (still) empty. */

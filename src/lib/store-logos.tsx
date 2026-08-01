@@ -1,7 +1,7 @@
 // Store logo system — real brand logos loaded from a CDN with an automatic
 // coloured-tile fallback for custom/user-created stores or broken images.
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { Check, ChevronRight } from "lucide-react";
 
 export const DEFAULT_SHOP_COLOR = "#94a3b8";
@@ -208,14 +208,14 @@ export type StoreCardProps = {
   id?: string | null;
   color?: string | null;
   /** Secondary line, e.g. "12 items". */
-  subtitle?: React.ReactNode;
+  subtitle?: ReactNode;
   selected?: boolean;
   showChevron?: boolean;
   onClick?: () => void;
   /** Right-hand slot (e.g. reorder / edit controls) — replaces the chevron. */
-  trailing?: React.ReactNode;
+  trailing?: ReactNode;
   /** Override the logo tile (e.g. "All stores" star). */
-  leading?: React.ReactNode;
+  leading?: ReactNode;
   className?: string;
 };
 
