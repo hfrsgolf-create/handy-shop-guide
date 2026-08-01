@@ -1091,22 +1091,40 @@ function ShopEditorSheet({ shop, onClose }: { shop: Shop | null; onClose: () => 
         </Field>
 
         <Field label="Colour">
-          <div className="grid grid-cols-5 gap-2.5">
-            {SHOP_COLOR_PRESETS.map((c) => (
-              <button
-                key={c.value}
-                onClick={() => setColor(c.value)}
-                aria-label={c.name}
-                className={`flex h-12 items-center justify-center rounded-2xl transition ${
-                  color === c.value ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : ""
-                }`}
-                style={{ backgroundColor: c.value }}
-              >
-                {color === c.value && <Check className="h-4 w-4 text-white" strokeWidth={3} />}
-              </button>
-            ))}
+          <div className="flex items-center gap-3">
+            <StoreLogo storeName={name || "New shop"} color={color} size={44} />
+            <label className="flex flex-1 items-center justify-between rounded-2xl bg-secondary px-4 py-3 text-sm">
+              <span className="text-muted-foreground">Custom colour</span>
+              <input
+                type="color"
+                value={color}
+                onChange={(e) => setColor(e.target.value.toLowerCase())}
+                className="h-8 w-12 cursor-pointer rounded-lg border border-black/10 bg-transparent p-0"
+              />
+            </label>
+          </div>
+          <div className="mt-3 grid grid-cols-5 gap-2.5">
+            {SHOP_COLOR_PRESETS.map((c) => {
+              const selected = color === c.value.toLowerCase();
+              return (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() => setColor(c.value.toLowerCase())}
+                  aria-label={c.name}
+                  aria-pressed={selected}
+                  className={`flex h-12 items-center justify-center rounded-2xl transition ${
+                    selected ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : ""
+                  }`}
+                  style={{ backgroundColor: c.value }}
+                >
+                  {selected && <Check className="h-4 w-4 text-white" strokeWidth={3} />}
+                </button>
+              );
+            })}
           </div>
         </Field>
+
 
         <Field label="Logo">
           <div className="rounded-2xl border border-dashed border-border px-4 py-5 text-center text-xs text-muted-foreground">
