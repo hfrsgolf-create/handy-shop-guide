@@ -31,7 +31,7 @@ import { useShops, FREE_SHOP_LIMIT, SHOP_COLOR_PRESETS, FALLBACK_SHOPS, type Sho
 import { useUserShops } from "@/lib/user-shops";
 import { supabase } from "@/integrations/supabase/client";
 import { Pencil, Sparkles } from "lucide-react";
-import { StoreLogo } from "@/lib/store-logos";
+import { StoreLogo, StoreTab } from "@/lib/store-logos";
 
 type Screen =
   | { name: "home" }
@@ -266,7 +266,8 @@ function GoShoppingScreen({ go }: { go: (s: Screen) => void }) {
               style={{ boxShadow: "0 2px 6px rgba(0,0,0,0.05)" }}
               className="flex w-full items-center gap-2.5 rounded-2xl bg-white border border-black/5 px-3.5 py-3 text-left transition-transform duration-150 ease-out active:scale-[0.97]"
             >
-              <StoreLogo storeName={store.name} size={44} />
+              <StoreLogo storeId={id} storeName={store.name} color={store.color} size={44} />
+
               <div className="min-w-0 flex-1">
                 <p className="text-[16px] font-semibold leading-tight truncate">{store.name}</p>
                 <p className="mt-0.5 text-[13px] text-muted-foreground">
@@ -317,7 +318,7 @@ function StoreScreen({
     <div className="px-6 pt-14">
       <BackHeader go={go} to={{ name: "goShopping" }} label="Shops" />
       <div className="mt-3 flex items-center gap-3">
-        <StoreLogo storeName={store.name} size={44} />
+        <StoreLogo storeId={store.id} storeName={store.name} color={store.color} size={44} />
         <div className="min-w-0">
           <h1 className="text-[28px] font-semibold tracking-tight">{store.name}</h1>
           <p className="text-sm text-muted-foreground">{visible.length} items available</p>
@@ -647,9 +648,11 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
             onClick={() => go({ name: "storeFavourites", storeId: sh.id })}
             label={sh.name}
             count={tabCounts[sh.id] ?? 0}
+            storeId={sh.id}
             color={sh.color}
           />
         ))}
+
       </div>
 
       {/* Lock confirmation */}
@@ -765,11 +768,14 @@ function FavStoreRow({
   label,
   count,
   isAll,
+  storeId,
+  color,
 }: {
   onClick: () => void;
   label: string;
   count: number;
   color?: string;
+  storeId?: string;
   isAll?: boolean;
 }) {
   return (
@@ -786,7 +792,7 @@ function FavStoreRow({
           ★
         </span>
       ) : (
-        <StoreLogo storeName={label} />
+        <StoreLogo storeId={storeId} storeName={label} color={color} />
       )}
       <div className="min-w-0 flex-1">
         <p className="text-[16px] font-semibold leading-tight truncate">{label}</p>
@@ -798,6 +804,7 @@ function FavStoreRow({
     </button>
   );
 }
+
 
 
 function StoreRow({
@@ -822,10 +829,8 @@ function StoreRow({
           : "bg-card text-foreground border-border"
       }`}
     >
-      <span
-        className="h-8 w-8 shrink-0 rounded-xl"
-        style={{ backgroundColor: color ?? (active ? "rgba(255,255,255,0.25)" : "hsl(var(--secondary))") }}
-      />
+      <StoreLogo storeName={label} color={color} size={32} />
+
       <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{label}</span>
       <span className={`text-sm font-medium ${active ? "opacity-90" : "text-muted-foreground"}`}>
         ({count})
@@ -925,7 +930,7 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
             key={s.id}
             className="flex items-center gap-3 rounded-3xl bg-card border border-border shadow-card px-4 py-4"
           >
-            <StoreLogo storeName={s.name} size={40} />
+            <StoreLogo storeId={s.id} storeName={s.name} color={s.color} size={40} />
             <p className="min-w-0 flex-1 truncate text-[15px] font-semibold">{s.name}</p>
             <div className="flex items-center">
               <IconBtn aria-label="Move up" disabled={i === 0} onClick={() => move(s.id, -1)}>
@@ -1034,7 +1039,14 @@ function ShopEditorSheet({ shop, onClose }: { shop: Shop | null; onClose: () => 
   const update = useShops((s) => s.update);
   const isEdit = !!shop;
   const [name, setName] = useState(shop?.name ?? "");
-  const [color, setColor] = useState(shop?.color ?? SHOP_COLOR_PRESETS[0].value);
+  const [color, setColor] = useState(
+    (shop?.color ?? SHOP_COLOR_PRESETS[0].value).toLowerCase(),
+  );
+  useEffect(() => {
+    setName(shop?.name ?? "");
+    setColor((shop?.color ?? SHOP_COLOR_PRESETS[0].value).toLowerCase());
+  }, [shop?.id]);
+
 
   const [saving, setSaving] = useState(false);
 
@@ -1079,22 +1091,40 @@ function ShopEditorSheet({ shop, onClose }: { shop: Shop | null; onClose: () => 
         </Field>
 
         <Field label="Colour">
-          <div className="grid grid-cols-5 gap-2.5">
-            {SHOP_COLOR_PRESETS.map((c) => (
-              <button
-                key={c.value}
-                onClick={() => setColor(c.value)}
-                aria-label={c.name}
-                className={`flex h-12 items-center justify-center rounded-2xl transition ${
-                  color === c.value ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : ""
-                }`}
-                style={{ backgroundColor: c.value }}
-              >
-                {color === c.value && <Check className="h-4 w-4 text-white" strokeWidth={3} />}
-              </button>
-            ))}
+          <div className="flex items-center gap-3">
+            <StoreLogo storeName={name || "New shop"} color={color} size={44} />
+            <label className="flex flex-1 items-center justify-between rounded-2xl bg-secondary px-4 py-3 text-sm">
+              <span className="text-muted-foreground">Custom colour</span>
+              <input
+                type="color"
+                value={color}
+                onChange={(e) => setColor(e.target.value.toLowerCase())}
+                className="h-8 w-12 cursor-pointer rounded-lg border border-black/10 bg-transparent p-0"
+              />
+            </label>
+          </div>
+          <div className="mt-3 grid grid-cols-5 gap-2.5">
+            {SHOP_COLOR_PRESETS.map((c) => {
+              const selected = color === c.value.toLowerCase();
+              return (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() => setColor(c.value.toLowerCase())}
+                  aria-label={c.name}
+                  aria-pressed={selected}
+                  className={`flex h-12 items-center justify-center rounded-2xl transition ${
+                    selected ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : ""
+                  }`}
+                  style={{ backgroundColor: c.value }}
+                >
+                  {selected && <Check className="h-4 w-4 text-white" strokeWidth={3} />}
+                </button>
+              );
+            })}
           </div>
         </Field>
+
 
         <Field label="Logo">
           <div className="rounded-2xl border border-dashed border-border px-4 py-5 text-center text-xs text-muted-foreground">
@@ -1300,9 +1330,15 @@ function DealSheet({ item, onClose }: { item: Item; onClose: () => void }) {
             return (
               <div className="flex flex-col items-start gap-2">
                 {shops.map((sh) => (
-                  <ChoiceChip widthCh={widthCh} key={sh.id} selected={store === sh.id} onClick={() => setStore(sh.id)}>
-                    {sh.name}
-                  </ChoiceChip>
+                  <StoreTab
+                    key={sh.id}
+                    widthCh={widthCh}
+                    id={sh.id}
+                    name={sh.name}
+                    color={sh.color}
+                    selected={store === sh.id}
+                    onClick={() => setStore(sh.id)}
+                  />
                 ))}
               </div>
             );
