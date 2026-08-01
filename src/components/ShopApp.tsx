@@ -889,13 +889,13 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
     PREMIUM_RESTRICTIONS_ENABLED && !isPremium && shops.length >= FREE_SHOP_LIMIT;
   const showUpgradeUi = PREMIUM_RESTRICTIONS_ENABLED && !isPremium;
 
+  // Premium status is granted server-side only (verified purchase). The client
+  // must never write profiles.is_premium — the database rejects it.
   const upgrade = async () => {
-    if (!profile) return;
-    await supabase.from("profiles").update({ is_premium: true }).eq("id", profile.id);
-    setProfile({ ...profile, is_premium: true });
-    toast.success("You're on Premium — add as many shops as you like.");
+    toast("Premium is coming soon — purchases are verified securely on our servers.");
     setShowUpgrade(false);
   };
+
 
   const onAddClick = () => {
     if (atLimit) {
