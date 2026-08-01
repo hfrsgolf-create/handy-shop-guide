@@ -119,6 +119,8 @@ export type StoreLogoProps = {
   storeId?: string | null;
   color?: string | null;
   size?: number;
+  /** Container corner radius — pass "50%" for a circle. */
+  radius?: number | string;
   className?: string;
   style?: CSSProperties;
 };
@@ -129,6 +131,7 @@ export function StoreLogo({
   storeId,
   color,
   size = 44,
+  radius = 12,
   className,
   style,
 }: StoreLogoProps) {
@@ -144,7 +147,7 @@ export function StoreLogo({
   const base: CSSProperties = {
     width: size,
     height: size,
-    borderRadius: 12,
+    borderRadius: radius,
     border: "1px solid rgba(0,0,0,0.06)",
     ...style,
   };
