@@ -766,11 +766,14 @@ function FavStoreRow({
   label,
   count,
   isAll,
+  storeId,
+  color,
 }: {
   onClick: () => void;
   label: string;
   count: number;
   color?: string;
+  storeId?: string;
   isAll?: boolean;
 }) {
   return (
@@ -787,7 +790,7 @@ function FavStoreRow({
           ★
         </span>
       ) : (
-        <StoreLogo storeName={label} />
+        <StoreLogo storeId={storeId} storeName={label} color={color} />
       )}
       <div className="min-w-0 flex-1">
         <p className="text-[16px] font-semibold leading-tight truncate">{label}</p>
@@ -799,6 +802,7 @@ function FavStoreRow({
     </button>
   );
 }
+
 
 
 function StoreRow({
