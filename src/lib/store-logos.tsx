@@ -1,7 +1,8 @@
 // Store logo system — real brand logos loaded from a CDN with an automatic
 // coloured-tile fallback for custom/user-created stores or broken images.
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { Check, ChevronRight } from "lucide-react";
 
 export const DEFAULT_SHOP_COLOR = "#94a3b8";
 
@@ -28,6 +29,44 @@ export const storeLogos: Partial<Record<StoreKey, string>> = {
   asda: "https://i.ibb.co/qMgFMvZW/file-00000000755881f4b2df982a9e1eb899.png",
   waitrose: "https://i.ibb.co/wNvBxwqg/file-00000000eb348243afef256e86a2f1e0.png",
 };
+
+/** Official-ish brand colours used for card tints & fallback tiles. */
+export const storeColors: Record<StoreKey, string> = {
+  tesco: "#EB001B",
+  sainsburys: "#FF7F00",
+  aldi: "#1C3F94",
+  lidl: "#0050AA",
+  costco: "#E31837",
+  marksandspencer: "#1A1A1A",
+  coop: "#00B5E2",
+  asda: "#78BE20",
+  waitrose: "#6AB023",
+  morrisons: "#007A3E",
+};
+
+/**
+ * Resolve the colour used for a shop card. Branded stores always use their
+ * official colour; custom (user-created) shops use their saved colour.
+ */
+export function brandColor(
+  id: string | null | undefined,
+  name: string | null | undefined,
+  saved?: string | null,
+): string {
+  const key = getStoreKey(id) ?? getStoreKey(name);
+  if (key && storeColors[key]) return storeColors[key];
+  return saved || DEFAULT_SHOP_COLOR;
+}
+
+/** rgba() tint from a hex colour. */
+export function tint(hex: string, alpha: number): string {
+  const h = (hex || DEFAULT_SHOP_COLOR).replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const r = parseInt(full.slice(0, 2), 16) || 0;
+  const g = parseInt(full.slice(2, 4), 16) || 0;
+  const b = parseInt(full.slice(4, 6), 16) || 0;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 /** Normalise a store id or free-text name to a canonical store key. */
 export function getStoreKey(input: string | null | undefined): StoreKey | null {
@@ -81,6 +120,8 @@ export type StoreLogoProps = {
   storeId?: string | null;
   color?: string | null;
   size?: number;
+  /** Container corner radius — pass "50%" for a circle. */
+  radius?: number | string;
   className?: string;
   style?: CSSProperties;
 };
@@ -91,6 +132,7 @@ export function StoreLogo({
   storeId,
   color,
   size = 44,
+  radius = 12,
   className,
   style,
 }: StoreLogoProps) {
@@ -106,7 +148,7 @@ export function StoreLogo({
   const base: CSSProperties = {
     width: size,
     height: size,
-    borderRadius: 12,
+    borderRadius: radius,
     border: "1px solid rgba(0,0,0,0.06)",
     ...style,
   };
@@ -136,7 +178,7 @@ export function StoreLogo({
   return (
     <span
       className={`inline-flex shrink-0 items-center justify-center overflow-hidden transition-transform duration-150 ease-out active:scale-[0.97] ${className ?? ""}`}
-      style={{ ...base, background: "#ffffff", padding: Math.round(size * 0.16) }}
+      style={{ ...base, background: "#ffffff", padding: Math.round(size * 0.11) }}
       role="img"
       aria-label={`${storeName ?? "Shop"} logo`}
     >
@@ -161,6 +203,93 @@ export function StoreLogo({
   );
 }
 
+export type StoreCardProps = {
+  name: string;
+  id?: string | null;
+  color?: string | null;
+  /** Secondary line, e.g. "12 items". */
+  subtitle?: ReactNode;
+  selected?: boolean;
+  showChevron?: boolean;
+  onClick?: () => void;
+  /** Right-hand slot (e.g. reorder / edit controls) — replaces the chevron. */
+  trailing?: ReactNode;
+  /** Override the logo tile (e.g. "All stores" star). */
+  leading?: ReactNode;
+  className?: string;
+};
+
+/**
+ * Google Wallet-style shop card. Single source of truth for how a shop looks
+ * anywhere in the app: logo circle + name/count stack + chevron on a subtly
+ * brand-tinted rounded card.
+ */
+export function StoreCard({
+  name,
+  id,
+  color,
+  subtitle,
+  selected,
+  showChevron = true,
+  onClick,
+  trailing,
+  leading,
+  className,
+}: StoreCardProps) {
+  const accent = brandColor(id, name, color);
+  const Comp = onClick ? "button" : "div";
+
+  return (
+    <Comp
+      {...(onClick ? { type: "button" as const, onClick, "aria-pressed": !!selected } : {})}
+      title={name}
+      style={{
+        minHeight: 88,
+        borderRadius: 18,
+        background: `linear-gradient(180deg, ${tint(accent, 0.1)}, ${tint(accent, 0.055)})`,
+        boxShadow: selected
+          ? `0 6px 18px ${tint(accent, 0.22)}`
+          : "0 1px 3px rgba(16, 24, 40, 0.06)",
+        borderColor: selected ? tint(accent, 0.55) : tint(accent, 0.14),
+      }}
+      className={`flex w-full items-center gap-4 border p-4 text-left transition-[transform,box-shadow] duration-100 ease-out hover:shadow-[0_8px_20px_rgba(16,24,40,0.10)] ${
+        onClick ? "active:scale-[0.975]" : ""
+      } ${className ?? ""}`}
+    >
+      {leading ?? (
+        <StoreLogo
+          storeId={id}
+          storeName={name}
+          color={accent}
+          size={54}
+          radius="50%"
+          style={{
+            background: "#ffffff",
+            border: "1px solid rgba(0,0,0,0.05)",
+            boxShadow: "0 1px 2px rgba(16,24,40,0.08)",
+          }}
+        />
+      )}
+
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[17px] font-semibold leading-tight tracking-tight text-foreground">
+          {name}
+        </span>
+        {subtitle !== undefined && subtitle !== null && (
+          <span className="mt-1 block truncate text-[13px] font-medium text-muted-foreground">
+            {subtitle}
+          </span>
+        )}
+      </span>
+
+      {trailing ??
+        (showChevron ? (
+          <ChevronRight className="h-5 w-5 shrink-0 text-foreground/25" strokeWidth={2.25} />
+        ) : null)}
+    </Comp>
+  );
+}
+
 export type StoreTabProps = {
   name: string;
   id?: string | null;
@@ -171,55 +300,27 @@ export type StoreTabProps = {
   className?: string;
 };
 
-/** Logo-first shop tab used in every shop selector. */
-export function StoreTab({ name, id, color, selected, onClick, widthCh, className }: StoreTabProps) {
-  const url = storeLogoUrl(id, name);
-  const [failed, setFailed] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-  const bg = color || DEFAULT_SHOP_COLOR;
-  const showLogo = url && !failed;
-
-  const width = widthCh ? `min(calc(${widthCh}ch + 2.5rem), 78vw)` : undefined;
-
+/** Selection variant of the shop card (kept for existing selector call sites). */
+export function StoreTab({ name, id, color, selected, onClick, className }: StoreTabProps) {
   return (
-    <button
-      type="button"
+    <StoreCard
+      name={name}
+      id={id}
+      color={color}
+      selected={selected}
       onClick={onClick}
-      title={name}
-      aria-pressed={!!selected}
-      style={{
-        width,
-        minWidth: "6rem",
-        height: 56,
-        background: showLogo ? "#ffffff" : bg,
-        color: showLogo ? undefined : contrastText(bg),
-        boxShadow: selected ? "0 4px 12px rgba(0,0,0,0.10)" : "0 1px 4px rgba(0,0,0,0.05)",
-        transform: selected ? "scale(1.04)" : undefined,
-      }}
-      className={`flex items-center justify-center overflow-hidden rounded-2xl border px-3 py-2 transition-all duration-150 ease-out active:scale-[0.97] ${
-        selected ? "border-primary ring-2 ring-primary/30" : "border-black/5"
-      } ${className ?? ""}`}
-    >
-      {showLogo ? (
-        <img
-          src={url!}
-          alt={name}
-          loading="lazy"
-          decoding="async"
-          onLoad={() => setLoaded(true)}
-          onError={() => setFailed(true)}
-          style={{
-            maxHeight: "100%",
-            maxWidth: "100%",
-            height: 34,
-            objectFit: "contain",
-            opacity: loaded ? 1 : 0,
-            transition: "opacity 0.2s ease",
-          }}
-        />
-      ) : (
-        <span className="truncate text-sm font-semibold">{name}</span>
-      )}
-    </button>
+      showChevron={false}
+      trailing={
+        <span
+          aria-hidden
+          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition ${
+            selected ? "border-primary bg-primary text-primary-foreground" : "border-foreground/20"
+          }`}
+        >
+          {selected && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+        </span>
+      }
+      className={className}
+    />
   );
 }

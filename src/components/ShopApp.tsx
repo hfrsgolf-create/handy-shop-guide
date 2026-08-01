@@ -31,7 +31,7 @@ import { useShops, FREE_SHOP_LIMIT, SHOP_COLOR_PRESETS, FALLBACK_SHOPS, type Sho
 import { useUserShops } from "@/lib/user-shops";
 import { supabase } from "@/integrations/supabase/client";
 import { Pencil, Sparkles } from "lucide-react";
-import { StoreLogo, StoreTab } from "@/lib/store-logos";
+import { StoreLogo, StoreTab, StoreCard, brandColor } from "@/lib/store-logos";
 
 type Screen =
   | { name: "home" }
@@ -254,29 +254,25 @@ function GoShoppingScreen({ go }: { go: (s: Screen) => void }) {
       <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Where are you shopping?</h1>
       <p className="mt-1 text-sm text-muted-foreground">Tap a shop to see what to buy there.</p>
 
-      <div className="mt-8 space-y-2.5">
+      <div className="mt-8 space-y-3.5">
         {shops.map((store) => {
           const id = store.id;
           const visible = items.filter((it) => !it.checked && (it.preferredStore === id || (!it.isLocked && it.preferredStore !== "any") || it.preferredStore === "any"));
           const deals = visible.filter((it) => activeDeal(it) && activeDeal(it)!.store === id).length;
           return (
-            <button
+            <StoreCard
               key={id}
+              id={id}
+              name={store.name}
+              color={store.color}
               onClick={() => go({ name: "store", storeId: id })}
-              style={{ boxShadow: "0 2px 6px rgba(0,0,0,0.05)" }}
-              className="flex w-full items-center gap-2.5 rounded-2xl bg-white border border-black/5 px-3.5 py-3 text-left transition-transform duration-150 ease-out active:scale-[0.97]"
-            >
-              <StoreLogo storeId={id} storeName={store.name} color={store.color} size={44} />
-
-              <div className="min-w-0 flex-1">
-                <p className="text-[16px] font-semibold leading-tight truncate">{store.name}</p>
-                <p className="mt-0.5 text-[13px] text-muted-foreground">
+              subtitle={
+                <>
                   {visible.length} {visible.length === 1 ? "item" : "items"}
                   {deals > 0 && <span className="text-deal"> · 🔥 {deals} on offer</span>}
-                </p>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </button>
+                </>
+              }
+            />
           );
         })}
       </div>
@@ -318,7 +314,14 @@ function StoreScreen({
     <div className="px-6 pt-14">
       <BackHeader go={go} to={{ name: "goShopping" }} label="Shops" />
       <div className="mt-3 flex items-center gap-3">
-        <StoreLogo storeId={store.id} storeName={store.name} color={store.color} size={44} />
+        <StoreLogo
+          storeId={store.id}
+          storeName={store.name}
+          color={brandColor(store.id, store.name, store.color)}
+          size={54}
+          radius="50%"
+          style={{ background: "#ffffff", boxShadow: "0 1px 2px rgba(16,24,40,0.08)" }}
+        />
         <div className="min-w-0">
           <h1 className="text-[28px] font-semibold tracking-tight">{store.name}</h1>
           <p className="text-sm text-muted-foreground">{visible.length} items available</p>
@@ -779,29 +782,30 @@ function FavStoreRow({
   isAll?: boolean;
 }) {
   return (
-    <button
+    <StoreCard
+      id={storeId}
+      name={label}
+      color={color}
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-3xl bg-card border border-border shadow-card px-4 py-4 text-left transition-transform duration-150 ease-out active:scale-[0.96]"
-    >
-      {isAll ? (
-        <span
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold"
-          style={{ background: "#f2f2f2", color: "#555", border: "1px solid rgba(0,0,0,0.05)" }}
-          aria-hidden
-        >
-          ★
-        </span>
-      ) : (
-        <StoreLogo storeId={storeId} storeName={label} color={color} />
-      )}
-      <div className="min-w-0 flex-1">
-        <p className="text-[16px] font-semibold leading-tight truncate">{label}</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          {count} {count === 1 ? "item" : "items"}
-        </p>
-      </div>
-      <ChevronRight className="h-5 w-5 text-muted-foreground" />
-    </button>
+      subtitle={`${count} ${count === 1 ? "item" : "items"}`}
+      leading={
+        isAll ? (
+          <span
+            className="inline-flex shrink-0 items-center justify-center rounded-full bg-white text-lg"
+            style={{
+              width: 54,
+              height: 54,
+              color: "#6b7280",
+              border: "1px solid rgba(0,0,0,0.05)",
+              boxShadow: "0 1px 2px rgba(16,24,40,0.08)",
+            }}
+            aria-hidden
+          >
+            ★
+          </span>
+        ) : undefined
+      }
+    />
   );
 }
 
@@ -813,30 +817,24 @@ function StoreRow({
   label,
   count,
   color,
+  storeId,
 }: {
   active: boolean;
   onClick: () => void;
   label: string;
   count: number;
   color?: string;
+  storeId?: string;
 }) {
   return (
-    <button
+    <StoreCard
+      id={storeId}
+      name={label}
+      color={color}
+      selected={active}
       onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-4 text-left transition active:scale-[0.99] ${
-        active
-          ? "bg-primary text-primary-foreground border-primary"
-          : "bg-card text-foreground border-border"
-      }`}
-    >
-      <StoreLogo storeName={label} color={color} size={32} />
-
-      <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{label}</span>
-      <span className={`text-sm font-medium ${active ? "opacity-90" : "text-muted-foreground"}`}>
-        ({count})
-      </span>
-      <ChevronRight className={`h-4 w-4 ${active ? "opacity-90" : "text-muted-foreground"}`} />
-    </button>
+      subtitle={`${count} ${count === 1 ? "item" : "items"}`}
+    />
   );
 }
 
@@ -924,15 +922,15 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
         Reorder, rename, or add new stores.
       </p>
 
-      <div className="mt-7 space-y-2.5">
+      <div className="mt-7 space-y-3.5">
         {shops.map((s, i) => (
-          <div
+          <StoreCard
             key={s.id}
-            className="flex items-center gap-3 rounded-3xl bg-card border border-border shadow-card px-4 py-4"
-          >
-            <StoreLogo storeId={s.id} storeName={s.name} color={s.color} size={40} />
-            <p className="min-w-0 flex-1 truncate text-[15px] font-semibold">{s.name}</p>
-            <div className="flex items-center">
+            id={s.id}
+            name={s.name}
+            color={s.color}
+            trailing={
+            <div className="flex shrink-0 items-center">
               <IconBtn aria-label="Move up" disabled={i === 0} onClick={() => move(s.id, -1)}>
                 <ArrowUp className="h-4 w-4" />
               </IconBtn>
@@ -950,7 +948,8 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
                 <Trash2 className="h-4 w-4" />
               </IconBtn>
             </div>
-          </div>
+            }
+          />
         ))}
       </div>
 
@@ -1092,7 +1091,7 @@ function ShopEditorSheet({ shop, onClose }: { shop: Shop | null; onClose: () => 
 
         <Field label="Colour">
           <div className="flex items-center gap-3">
-            <StoreLogo storeName={name || "New shop"} color={color} size={44} />
+            <StoreLogo storeName={name || "New shop"} color={color} size={54} radius="50%" />
             <label className="flex flex-1 items-center justify-between rounded-2xl bg-secondary px-4 py-3 text-sm">
               <span className="text-muted-foreground">Custom colour</span>
               <input
@@ -1326,13 +1325,11 @@ function DealSheet({ item, onClose }: { item: Item; onClose: () => void }) {
       <div className="space-y-5">
         <Field label="Store">
           {(() => {
-            const widthCh = Math.min(Math.max(...shops.map((sh) => sh.name.length), 6), 28);
             return (
-              <div className="flex flex-col items-start gap-2">
+              <div className="flex flex-col items-stretch gap-3">
                 {shops.map((sh) => (
                   <StoreTab
                     key={sh.id}
-                    widthCh={widthCh}
                     id={sh.id}
                     name={sh.name}
                     color={sh.color}
