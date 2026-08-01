@@ -266,7 +266,8 @@ function GoShoppingScreen({ go }: { go: (s: Screen) => void }) {
               style={{ boxShadow: "0 2px 6px rgba(0,0,0,0.05)" }}
               className="flex w-full items-center gap-2.5 rounded-2xl bg-white border border-black/5 px-3.5 py-3 text-left transition-transform duration-150 ease-out active:scale-[0.97]"
             >
-              <StoreLogo storeName={store.name} size={44} />
+              <StoreLogo storeId={id} storeName={store.name} color={store.color} size={44} />
+
               <div className="min-w-0 flex-1">
                 <p className="text-[16px] font-semibold leading-tight truncate">{store.name}</p>
                 <p className="mt-0.5 text-[13px] text-muted-foreground">
