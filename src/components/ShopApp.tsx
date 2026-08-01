@@ -932,7 +932,7 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
             key={s.id}
             className="flex items-center gap-3 rounded-3xl bg-card border border-border shadow-card px-4 py-4"
           >
-            <StoreLogo storeName={s.name} size={40} />
+            <StoreLogo storeId={s.id} storeName={s.name} color={s.color} size={40} />
             <p className="min-w-0 flex-1 truncate text-[15px] font-semibold">{s.name}</p>
             <div className="flex items-center">
               <IconBtn aria-label="Move up" disabled={i === 0} onClick={() => move(s.id, -1)}>
