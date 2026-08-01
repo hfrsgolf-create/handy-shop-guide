@@ -31,7 +31,7 @@ import { useShops, FREE_SHOP_LIMIT, SHOP_COLOR_PRESETS, FALLBACK_SHOPS, type Sho
 import { useUserShops } from "@/lib/user-shops";
 import { supabase } from "@/integrations/supabase/client";
 import { Pencil, Sparkles } from "lucide-react";
-import { StoreLogo, StoreTab, DEFAULT_SHOP_COLOR } from "@/lib/store-logos";
+import { StoreLogo, StoreTab } from "@/lib/store-logos";
 
 type Screen =
   | { name: "home" }
