@@ -648,9 +648,11 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
             onClick={() => go({ name: "storeFavourites", storeId: sh.id })}
             label={sh.name}
             count={tabCounts[sh.id] ?? 0}
+            storeId={sh.id}
             color={sh.color}
           />
         ))}
+
       </div>
 
       {/* Lock confirmation */}
