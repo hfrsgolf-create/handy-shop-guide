@@ -29,6 +29,44 @@ export const storeLogos: Partial<Record<StoreKey, string>> = {
   waitrose: "https://i.ibb.co/wNvBxwqg/file-00000000eb348243afef256e86a2f1e0.png",
 };
 
+/** Official-ish brand colours used for card tints & fallback tiles. */
+export const storeColors: Record<StoreKey, string> = {
+  tesco: "#EB001B",
+  sainsburys: "#FF7F00",
+  aldi: "#1C3F94",
+  lidl: "#0050AA",
+  costco: "#E31837",
+  marksandspencer: "#1A1A1A",
+  coop: "#00B5E2",
+  asda: "#78BE20",
+  waitrose: "#6AB023",
+  morrisons: "#007A3E",
+};
+
+/**
+ * Resolve the colour used for a shop card. Branded stores always use their
+ * official colour; custom (user-created) shops use their saved colour.
+ */
+export function brandColor(
+  id: string | null | undefined,
+  name: string | null | undefined,
+  saved?: string | null,
+): string {
+  const key = getStoreKey(id) ?? getStoreKey(name);
+  if (key && storeColors[key]) return storeColors[key];
+  return saved || DEFAULT_SHOP_COLOR;
+}
+
+/** rgba() tint from a hex colour. */
+export function tint(hex: string, alpha: number): string {
+  const h = (hex || DEFAULT_SHOP_COLOR).replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const r = parseInt(full.slice(0, 2), 16) || 0;
+  const g = parseInt(full.slice(2, 4), 16) || 0;
+  const b = parseInt(full.slice(4, 6), 16) || 0;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 /** Normalise a store id or free-text name to a canonical store key. */
 export function getStoreKey(input: string | null | undefined): StoreKey | null {
   if (!input) return null;
