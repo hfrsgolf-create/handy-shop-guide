@@ -318,7 +318,7 @@ function StoreScreen({
     <div className="px-6 pt-14">
       <BackHeader go={go} to={{ name: "goShopping" }} label="Shops" />
       <div className="mt-3 flex items-center gap-3">
-        <StoreLogo storeName={store.name} size={44} />
+        <StoreLogo storeId={store.id} storeName={store.name} color={store.color} size={44} />
         <div className="min-w-0">
           <h1 className="text-[28px] font-semibold tracking-tight">{store.name}</h1>
           <p className="text-sm text-muted-foreground">{visible.length} items available</p>
