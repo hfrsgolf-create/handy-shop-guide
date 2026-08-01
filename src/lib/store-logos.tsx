@@ -178,7 +178,7 @@ export function StoreLogo({
   return (
     <span
       className={`inline-flex shrink-0 items-center justify-center overflow-hidden transition-transform duration-150 ease-out active:scale-[0.97] ${className ?? ""}`}
-      style={{ ...base, background: "#ffffff", padding: Math.round(size * 0.16) }}
+      style={{ ...base, background: "#ffffff", padding: Math.round(size * 0.11) }}
       role="img"
       aria-label={`${storeName ?? "Shop"} logo`}
     >
