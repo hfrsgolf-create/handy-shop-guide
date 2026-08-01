@@ -1039,7 +1039,14 @@ function ShopEditorSheet({ shop, onClose }: { shop: Shop | null; onClose: () => 
   const update = useShops((s) => s.update);
   const isEdit = !!shop;
   const [name, setName] = useState(shop?.name ?? "");
-  const [color, setColor] = useState(shop?.color ?? SHOP_COLOR_PRESETS[0].value);
+  const [color, setColor] = useState(
+    (shop?.color ?? SHOP_COLOR_PRESETS[0].value).toLowerCase(),
+  );
+  useEffect(() => {
+    setName(shop?.name ?? "");
+    setColor((shop?.color ?? SHOP_COLOR_PRESETS[0].value).toLowerCase());
+  }, [shop?.id]);
+
 
   const [saving, setSaving] = useState(false);
 
