@@ -829,10 +829,8 @@ function StoreRow({
           : "bg-card text-foreground border-border"
       }`}
     >
-      <span
-        className="h-8 w-8 shrink-0 rounded-xl"
-        style={{ backgroundColor: color ?? (active ? "rgba(255,255,255,0.25)" : "hsl(var(--secondary))") }}
-      />
+      <StoreLogo storeName={label} color={color} size={32} />
+
       <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{label}</span>
       <span className={`text-sm font-medium ${active ? "opacity-90" : "text-muted-foreground"}`}>
         ({count})
