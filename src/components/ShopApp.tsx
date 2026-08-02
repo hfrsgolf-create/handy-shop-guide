@@ -24,6 +24,8 @@ import {
   useShop,
   storeName,
   activeDeal,
+  listItems,
+  favouriteItems,
   type Item,
   type StoreId,
 } from "@/lib/shop-store";
@@ -257,7 +259,7 @@ function GoShoppingScreen({ go }: { go: (s: Screen) => void }) {
       <div className="mt-8 space-y-3.5">
         {shops.map((store) => {
           const id = store.id;
-          const visible = items.filter((it) => !it.checked && (it.preferredStore === id || (!it.isLocked && it.preferredStore !== "any") || it.preferredStore === "any"));
+          const visible = listItems(items).filter((it) => !it.checked && (it.preferredStore === id || (!it.isLocked && it.preferredStore !== "any") || it.preferredStore === "any"));
           const deals = visible.filter((it) => activeDeal(it) && activeDeal(it)!.store === id).length;
           return (
             <StoreCard
@@ -295,7 +297,7 @@ function StoreScreen({
   const shops = useShops((s) => s.shops);
   const store = shops.find((s) => s.id === storeId) ?? { id: storeId, name: storeName(storeId), color: "#94a3b8" };
 
-  const visible = items.filter((it) => !it.checked).filter((it) => {
+  const visible = listItems(items).filter((it) => !it.checked).filter((it) => {
     if (it.isLocked) return it.preferredStore === storeId;
     return true;
   });
@@ -380,10 +382,11 @@ function StoreSection({
 function AddItemScreen({ go }: { go: (s: Screen) => void }) {
   const items = useShop((s) => s.items);
   const addItem = useShop((s) => s.addItem);
+  const addFavouriteToList = useShop((s) => s.addFavouriteToList);
   const [name, setName] = useState("");
 
-  const favourites = useMemo(() => items.filter((i) => i.favorite), [items]);
-  const onListNames = new Set(items.filter((i) => !i.checked).map((i) => i.name.toLowerCase()));
+  const favourites = useMemo(() => favouriteItems(items), [items]);
+  const onListNames = new Set(listItems(items).filter((i) => !i.checked).map((i) => i.name.toLowerCase()));
 
   const suggestions = useMemo(() => {
     const q = name.trim().toLowerCase();
@@ -393,13 +396,8 @@ function AddItemScreen({ go }: { go: (s: Screen) => void }) {
   }, [favourites, name, onListNames]);
 
   const addFromFavourite = async (fav: Item) => {
-    await addItem({
-      name: fav.name,
-      preferredStore: fav.preferredStore,
-      isLocked: fav.isLocked,
-      notes: fav.notes,
-      favorite: false,
-    });
+    // clones the favourite into an independent list item
+    await addFavouriteToList(fav.id);
     toast.success(`Added ${fav.name}`);
     setName("");
   };
@@ -483,8 +481,8 @@ const FAV_ONBOARDING_KEY = "favouritesOnboardingDismissed_v1";
 function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
   const shops = useGuaranteedShops();
   const items = useShop((s) => s.items);
-  const addItem = useShop((s) => s.addItem);
-  const favs = items.filter((i) => i.favorite);
+  const addFavourite = useShop((s) => s.addFavourite);
+  const favs = favouriteItems(items);
 
   const [brand, setBrand] = useState("");
   const [product, setProduct] = useState("");
@@ -509,11 +507,10 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
   const submit = async () => {
     const combined = [brand.trim(), product.trim()].filter(Boolean).join(" ");
     if (!combined) return;
-    await addItem({
+    await addFavourite({
       name: combined,
       preferredStore: store,
       isLocked: locked && store !== "any",
-      favorite: true,
     });
     toast.success(`Saved ${combined} as favourite`);
     setBrand("");
@@ -719,9 +716,8 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
 
 function StoreFavouritesScreen({ storeId, go }: { storeId: StoreId; go: (s: Screen) => void }) {
   const items = useShop((s) => s.items);
-  const toggleFav = useShop((s) => s.toggleFav);
-  const removeItem = useShop((s) => s.removeItem);
-  const favs = items.filter((i) => i.favorite);
+  const removeFavourite = useShop((s) => s.removeFavourite);
+  const favs = favouriteItems(items);
   const list = storeId === "any" ? favs : favs.filter((f) => f.preferredStore === storeId);
   const title = storeId === "any" ? "All favourites" : `${storeName(storeId)} favourites`;
 
@@ -750,8 +746,7 @@ function StoreFavouritesScreen({ storeId, go }: { storeId: StoreId; go: (s: Scre
             </div>
             <button
               onClick={() => {
-                toggleFav(f.id);
-                if (f.checked) removeItem(f.id);
+                removeFavourite(f.id);
                 toast.success("Removed from favourites");
               }}
               aria-label="Remove favourite"
@@ -1183,7 +1178,7 @@ function ConfirmSheet({
 
 function MasterListScreen({ go, onEditDeal }: { go: (s: Screen) => void; onEditDeal: (it: Item) => void }) {
   const items = useShop((s) => s.items);
-  const visible = items.filter((i) => !i.checked);
+  const visible = listItems(items).filter((i) => !i.checked);
   const recent = useShop((s) => s.activity).slice(0, 3);
 
   return (
