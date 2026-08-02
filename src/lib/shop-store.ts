@@ -21,6 +21,7 @@ export type Item = {
   notes?: string;
   favorite: boolean;
   checked: boolean;
+  onList: boolean;
   createdAt: number;
   deal?: Deal;
 };
@@ -35,6 +36,7 @@ type DbItem = {
   notes: string | null;
   favorite: boolean;
   checked: boolean;
+  on_list: boolean;
   created_at: string;
   deal_store: string | null;
   deal_price: number | null;
@@ -49,6 +51,7 @@ const toItem = (r: DbItem): Item => ({
   notes: r.notes ?? undefined,
   favorite: r.favorite,
   checked: r.checked,
+  onList: r.on_list ?? true,
   createdAt: new Date(r.created_at).getTime(),
   deal: r.deal_store && r.deal_expiry
     ? {
@@ -67,7 +70,17 @@ type State = {
   userName: string;
   init: (householdId: string, userName: string) => Promise<void>;
   reset: () => void;
-  addItem: (i: { name: string; preferredStore: StoreId; isLocked: boolean; notes?: string; favorite?: boolean }) => Promise<void>;
+  addItem: (i: {
+    name: string;
+    preferredStore: StoreId;
+    isLocked: boolean;
+    notes?: string;
+    favorite?: boolean;
+    onList?: boolean;
+  }) => Promise<void>;
+  addFavourite: (i: { name: string; preferredStore: StoreId; isLocked: boolean; notes?: string }) => Promise<void>;
+  addFavouriteToList: (favId: string) => Promise<void>;
+  removeFavourite: (id: string) => Promise<void>;
   toggleCheck: (id: string) => Promise<void>;
   removeItem: (id: string) => Promise<void>;
   toggleFav: (id: string) => Promise<void>;
@@ -115,7 +128,7 @@ export const useShop = create<State>((set, get) => ({
     });
   },
 
-  addItem: async ({ name, preferredStore, isLocked, notes, favorite }) => {
+  addItem: async ({ name, preferredStore, isLocked, notes, favorite, onList }) => {
     const { householdId, userName } = get();
     if (!householdId) return;
     const { data, error } = await supabase
@@ -127,6 +140,7 @@ export const useShop = create<State>((set, get) => ({
         is_locked: isLocked,
         notes: notes || null,
         favorite: !!favorite,
+        on_list: onList ?? !favorite,
         created_by_name: userName,
       })
       .select("*")
@@ -150,6 +164,38 @@ export const useShop = create<State>((set, get) => ({
     });
   },
 
+  // Favourites are stored as their own rows that never sit on the shopping list.
+  addFavourite: async ({ name, preferredStore, isLocked, notes }) => {
+    await get().addItem({ name, preferredStore, isLocked, notes, favorite: true, onList: false });
+  },
+
+  // Adding a favourite to the list creates an independent clone — no shared row/reference.
+  addFavouriteToList: async (favId) => {
+    const fav = get().items.find((i) => i.id === favId);
+    if (!fav) return;
+    await get().addItem({
+      name: fav.name,
+      preferredStore: fav.preferredStore,
+      isLocked: fav.isLocked,
+      notes: fav.notes,
+      favorite: false,
+      onList: true,
+    });
+  },
+
+  removeFavourite: async (id) => {
+    const it = get().items.find((i) => i.id === id);
+    if (!it) return;
+    if (it.onList) {
+      // legacy row that is also on the list: keep the list entry, drop the favourite flag
+      set({ items: get().items.map((x) => (x.id === id ? { ...x, favorite: false } : x)) });
+      await supabase.from("items").update({ favorite: false }).eq("id", id);
+      return;
+    }
+    set({ items: get().items.filter((x) => x.id !== id) });
+    await supabase.from("items").delete().eq("id", id);
+  },
+
   toggleCheck: async (id) => {
     const it = get().items.find((i) => i.id === id);
     if (!it) return;
@@ -157,7 +203,16 @@ export const useShop = create<State>((set, get) => ({
     await supabase.from("items").update({ checked: !it.checked }).eq("id", id);
   },
 
+  // Removes an item from the shopping list only. Favourites are separate rows and stay untouched.
   removeItem: async (id) => {
+    const it = get().items.find((i) => i.id === id);
+    if (!it) return;
+    if (it.favorite) {
+      // legacy row that doubles as a favourite: take it off the list, keep the favourite
+      set({ items: get().items.map((x) => (x.id === id ? { ...x, onList: false, checked: false } : x)) });
+      await supabase.from("items").update({ on_list: false, checked: false }).eq("id", id);
+      return;
+    }
     set({ items: get().items.filter((x) => x.id !== id) });
     await supabase.from("items").delete().eq("id", id);
   },
@@ -203,8 +258,13 @@ export const useShop = create<State>((set, get) => ({
   clearChecked: async () => {
     const { householdId } = get();
     if (!householdId) return;
-    set({ items: get().items.filter((x) => !x.checked) });
-    await supabase.from("items").delete().eq("household_id", householdId).eq("checked", true);
+    set({ items: get().items.filter((x) => !(x.checked && !x.favorite)) });
+    await supabase
+      .from("items")
+      .delete()
+      .eq("household_id", householdId)
+      .eq("checked", true)
+      .eq("favorite", false);
   },
 }));
 
@@ -213,8 +273,11 @@ export const activeDeal = (item: Item) => {
   return new Date(item.deal.expiry).getTime() >= Date.now() ? item.deal : undefined;
 };
 
+export const listItems = (items: Item[]) => items.filter((i) => i.onList);
+export const favouriteItems = (items: Item[]) => items.filter((i) => i.favorite);
+
 export const itemsForStore = (items: Item[], store: Exclude<StoreId, "any">) => {
-  const visible = items.filter((it) => !it.checked).filter((it) => {
+  const visible = listItems(items).filter((it) => !it.checked).filter((it) => {
     if (it.isLocked) return it.preferredStore === store;
     return true;
   });
