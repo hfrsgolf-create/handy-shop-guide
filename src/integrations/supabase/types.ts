@@ -76,6 +76,7 @@ export type Database = {
           is_locked: boolean
           name: string
           notes: string | null
+          on_list: boolean
           preferred_store: string
         }
         Insert: {
@@ -92,6 +93,7 @@ export type Database = {
           is_locked?: boolean
           name: string
           notes?: string | null
+          on_list?: boolean
           preferred_store?: string
         }
         Update: {
@@ -108,6 +110,7 @@ export type Database = {
           is_locked?: boolean
           name?: string
           notes?: string | null
+          on_list?: boolean
           preferred_store?: string
         }
         Relationships: [
