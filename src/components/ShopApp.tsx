@@ -1176,56 +1176,173 @@ function ConfirmSheet({
 
 /* ---------- MASTER LIST ---------- */
 
-function MasterListScreen({ go, onEditDeal }: { go: (s: Screen) => void; onEditDeal: (it: Item) => void }) {
+function MasterListScreen({ go }: { go: (s: Screen) => void; onEditDeal: (it: Item) => void }) {
   const items = useShop((s) => s.items);
-  const visible = listItems(items).filter((i) => !i.checked);
-  const recent = useShop((s) => s.activity).slice(0, 3);
+  const addItem = useShop((s) => s.addItem);
+  const toggleCheck = useShop((s) => s.toggleCheck);
+  const clearChecked = useShop((s) => s.clearChecked);
+
+  const list = useMemo(() => listItems(items), [items]);
+  const remaining = list.filter((i) => !i.checked);
+  const checked = list.filter((i) => i.checked);
+
+  const finishShop = async () => {
+    const cleared = checked;
+    if (cleared.length === 0) {
+      toast("Nothing ticked off yet");
+      return;
+    }
+    await clearChecked();
+    toast.success("Shop complete — items cleared", {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          cleared.forEach((it) => {
+            addItem({
+              name: it.name,
+              preferredStore: it.preferredStore,
+              isLocked: it.isLocked,
+              notes: it.notes,
+            });
+          });
+        },
+      },
+    });
+  };
+
+  const asText = () => list.map((it) => `${it.checked ? "✓" : "•"} ${it.name}`).join("\n");
+
+  const share = async () => {
+    const text = asText();
+    if (!text) return;
+    const nav = navigator as Navigator & { share?: (d: ShareData) => Promise<void> };
+    try {
+      if (nav.share) {
+        await nav.share({ title: "Shopping list", text });
+        return;
+      }
+      await navigator.clipboard.writeText(text);
+      toast.success("List copied");
+    } catch {
+      /* user cancelled */
+    }
+  };
+
+  const print = () => {
+    const w = window.open("", "_blank", "width=480,height=640");
+    if (!w) return;
+    const rows = list.map((it) => `<li>${it.name}</li>`).join("");
+    w.document.write(
+      `<html><head><title>Shopping list</title></head><body style="font-family:system-ui;padding:24px"><h1 style="font-size:20px">Shopping list</h1><ul style="font-size:16px;line-height:1.8">${rows}</ul></body></html>`,
+    );
+    w.document.close();
+    w.focus();
+    w.print();
+  };
 
   return (
     <div className="px-6 pt-14">
       <BackHeader go={go} />
-      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Shopping list</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {visible.length} {visible.length === 1 ? "item" : "items"} to buy
-      </p>
-
-      <div className="mt-6 space-y-2">
-        {visible.length === 0 && (
-          <div className="rounded-3xl bg-card border border-border shadow-card px-5 py-10 text-center">
-            <p className="text-sm text-muted-foreground">Your list is empty.</p>
-            <button
-              onClick={() => go({ name: "addItem" })}
-              className="mt-4 rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground"
-            >
-              Add your first item
-            </button>
-          </div>
-        )}
-        {visible.map((it) => (
-          <ItemRow key={it.id} item={it} viewingStore={null} onEditDeal={onEditDeal} />
-        ))}
+      <div className="mt-3 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-[28px] font-semibold tracking-tight">Shopping list</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {remaining.length} left · {checked.length} in basket
+          </p>
+        </div>
+        <button
+          onClick={finishShop}
+          className="mt-1 shrink-0 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition active:scale-[0.97]"
+        >
+          Finish shop
+        </button>
       </div>
 
-      {recent.length > 0 && (
-        <>
-          <h2 className="mt-8 mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-            Recent activity
-          </h2>
-          <div className="space-y-1.5 pb-6">
-            {recent.map((a) => (
-              <div key={a.id} className="rounded-2xl bg-card border border-border px-4 py-3 text-sm">
-                <p>{a.text}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {formatDistanceToNow(a.at, { addSuffix: true })}
-                </p>
-              </div>
-            ))}
-          </div>
-        </>
+      <div className="mt-4 flex gap-2">
+        <button
+          onClick={share}
+          className="rounded-full bg-card border border-border px-4 py-2 text-xs font-medium transition active:scale-[0.97]"
+        >
+          Share list
+        </button>
+        <button
+          onClick={print}
+          className="rounded-full bg-card border border-border px-4 py-2 text-xs font-medium transition active:scale-[0.97]"
+        >
+          Print list
+        </button>
+      </div>
+
+      {list.length === 0 ? (
+        <div className="mt-6 rounded-3xl bg-card border border-border shadow-card px-5 py-10 text-center">
+          <p className="text-sm text-muted-foreground">Your list is empty.</p>
+          <button
+            onClick={() => go({ name: "addItem" })}
+            className="mt-4 rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground"
+          >
+            Add your first item
+          </button>
+        </div>
+      ) : (
+        <ul className="mt-6 overflow-hidden rounded-2xl border border-border pb-0">
+          {[...remaining, ...checked].map((it, idx) => (
+            <ShoppingRow key={it.id} item={it} onToggle={() => toggleCheck(it.id)} first={idx === 0} />
+          ))}
+        </ul>
       )}
+      <div className="h-8" />
     </div>
   );
 }
+
+function ShoppingRow({
+  item,
+  onToggle,
+  first,
+}: {
+  item: Item;
+  onToggle: () => void;
+  first: boolean;
+}) {
+  const image = (item as Item & { image?: string }).image;
+  return (
+    <li
+      className={`flex items-center gap-3 px-4 py-3 transition-colors duration-300 ${
+        first ? "" : "border-t border-border/60"
+      } ${item.checked ? "bg-[#eaf6ec] opacity-70" : "bg-[#fdeeee]"}`}
+    >
+      <button
+        onClick={onToggle}
+        aria-label={item.checked ? `Untick ${item.name}` : `Tick off ${item.name}`}
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition ${
+          item.checked
+            ? "border-[#2f6b3f] bg-[#2f6b3f] text-white"
+            : "border-border bg-background"
+        }`}
+      >
+        {item.checked && <Check className="h-4 w-4" strokeWidth={3} />}
+      </button>
+
+      {image && (
+        <img
+          src={image}
+          alt=""
+          loading="lazy"
+          className="h-9 w-9 shrink-0 rounded-lg object-cover"
+        />
+      )}
+
+      <span
+        className={`min-w-0 flex-1 truncate text-[15px] font-medium transition-colors ${
+          item.checked ? "text-muted-foreground line-through" : ""
+        }`}
+      >
+        {item.name}
+      </span>
+    </li>
+  );
+}
+
 
 /* ---------- ITEM ROW ---------- */
 
