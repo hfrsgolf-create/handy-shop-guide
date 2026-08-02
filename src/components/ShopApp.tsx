@@ -1356,7 +1356,6 @@ function ItemRow({
   onEditDeal: (it: Item) => void;
 }) {
   const toggleCheck = useShop((s) => s.toggleCheck);
-  const removeItem = useShop((s) => s.removeItem);
 
   const deal = activeDeal(item);
   const dealHere = deal && viewingStore && deal.store === viewingStore;
@@ -1365,15 +1364,8 @@ function ItemRow({
   return (
     <div className={`flex items-center gap-4 rounded-2xl border border-border px-4 py-4 transition ${dealHere ? "bg-deal-soft" : "bg-card"}`}>
       <button
-        onClick={() => {
-          toggleCheck(item.id);
-          if (!item.checked) {
-            toast.success(`${item.name} ticked off`, {
-              action: { label: "Undo", onClick: () => toggleCheck(item.id) },
-            });
-            setTimeout(() => removeItem(item.id), 1800);
-          }
-        }}
+        onClick={() => toggleCheck(item.id)}
+
         aria-label="Tick off"
         className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition ${
           item.checked ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background"
