@@ -41,9 +41,14 @@ type Screen =
   | { name: "store"; storeId: Exclude<StoreId, "any"> }
   | { name: "addItem" }
   | { name: "favourites" }
+  | { name: "favouritesByShop" }
+  | { name: "selectStore" }
   | { name: "storeFavourites"; storeId: StoreId }
   | { name: "manageShops" }
   | { name: "masterList" };
+
+type FavDraft = { brand: string; product: string; store: StoreId; locked: boolean };
+const EMPTY_FAV_DRAFT: FavDraft = { brand: "", product: "", store: "any", locked: false };
 
 
 export function ShopApp() {
@@ -55,6 +60,7 @@ export function ShopApp() {
   const shopsList = useShops((s) => s.shops);
   const ensureShopDefaults = useShops((s) => s.ensureDefaults);
   const [screen, setScreen] = useState<Screen>({ name: "home" });
+  const [favDraft, setFavDraft] = useState<FavDraft>(EMPTY_FAV_DRAFT);
   const [editingDealFor, setEditingDealFor] = useState<Item | null>(null);
   const [spinnerExpired, setSpinnerExpired] = useState(false);
 
@@ -99,7 +105,20 @@ export function ShopApp() {
           <StoreScreen storeId={screen.storeId} go={go} onEditDeal={setEditingDealFor} />
         )}
         {screen.name === "addItem" && <AddItemScreen go={go} />}
-        {screen.name === "favourites" && <FavouritesScreen go={go} />}
+        {screen.name === "favourites" && (
+          <FavouritesScreen go={go} draft={favDraft} setDraft={setFavDraft} />
+        )}
+        {screen.name === "selectStore" && (
+          <SelectStoreScreen
+            go={go}
+            value={favDraft.store}
+            onSelect={(id) => {
+              setFavDraft((d) => ({ ...d, store: id, locked: id === "any" ? false : d.locked }));
+              go({ name: "favourites" });
+            }}
+          />
+        )}
+        {screen.name === "favouritesByShop" && <FavouritesByShopScreen go={go} />}
         {screen.name === "storeFavourites" && <StoreFavouritesScreen storeId={screen.storeId} go={go} />}
         {screen.name === "manageShops" && <ManageShopsScreen go={go} />}
         {screen.name === "masterList" && <MasterListScreen go={go} onEditDeal={setEditingDealFor} />}
@@ -146,7 +165,7 @@ function HomeScreen({ go }: { go: (s: Screen) => void }) {
     },
     {
       id: "addItem",
-      title: "Add to list",
+      title: "Add to Shopping List",
       sub: "Type or pick from your favourites",
       icon: Plus,
       cardBg: "bg-[#e6efe4]",
@@ -176,6 +195,18 @@ function HomeScreen({ go }: { go: (s: Screen) => void }) {
       cardBg: "bg-[#fbecc9]",
       iconBg: "bg-[#e0a94a]/25",
       iconFg: "text-[#b57e1c]",
+      titleColor: "text-foreground",
+      subColor: "text-muted-foreground",
+      chevronColor: "text-muted-foreground",
+    },
+    {
+      id: "favouritesByShop",
+      title: "View favourites by shop",
+      sub: "Browse saved items grouped by store",
+      icon: StoreIcon,
+      cardBg: "bg-[#fdeadf]",
+      iconBg: "bg-[#e07a4a]/20",
+      iconFg: "text-[#c15c2c]",
       titleColor: "text-foreground",
       subColor: "text-muted-foreground",
       chevronColor: "text-muted-foreground",
@@ -413,7 +444,7 @@ function AddItemScreen({ go }: { go: (s: Screen) => void }) {
   return (
     <div className="px-6 pt-14">
       <BackHeader go={go} />
-      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Add to list</h1>
+      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Add to Shopping List</h1>
       <p className="mt-1 text-sm text-muted-foreground">Start typing — tap a suggestion to add instantly.</p>
 
       <div className="mt-6 flex gap-2">
