@@ -897,7 +897,6 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
     return list;
   }, [shops]);
 
-  const current = tabs.find((t) => t.id === selected) ?? null;
   const shopFavs = selected ? favs.filter((f) => f.preferredStore === selected) : [];
 
   const add = async (f: Item) => {
@@ -979,7 +978,6 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
           );
         })}
       </div>
-      {current === null && null}
     </div>
   );
 }
