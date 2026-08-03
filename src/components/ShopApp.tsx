@@ -34,6 +34,7 @@ import { useUserShops } from "@/lib/user-shops";
 import { supabase } from "@/integrations/supabase/client";
 import { Pencil, Sparkles } from "lucide-react";
 import { StoreLogo, StoreTab, StoreCard, brandColor } from "@/lib/store-logos";
+import { ITEM_CATALOGUE } from "@/lib/item-catalogue";
 
 type Screen =
   | { name: "home" }
