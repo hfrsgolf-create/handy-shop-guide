@@ -904,7 +904,7 @@ function StoreFavouritesScreen({ storeId, go }: { storeId: StoreId; go: (s: Scre
 
   return (
     <div className="px-6 pt-14">
-      <BackHeader go={go} to={{ name: "favourites" }} label="Favourites" />
+      <BackHeader go={go} to={{ name: "favouritesByShop" }} label="Favourites by shop" />
       <h1 className="mt-3 text-[28px] font-semibold tracking-tight">{title}</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         {list.length} {list.length === 1 ? "item" : "items"}
@@ -942,48 +942,6 @@ function StoreFavouritesScreen({ storeId, go }: { storeId: StoreId; go: (s: Scre
   );
 }
 
-function FavStoreRow({
-  onClick,
-  label,
-  count,
-  isAll,
-  storeId,
-  color,
-}: {
-  onClick: () => void;
-  label: string;
-  count: number;
-  color?: string;
-  storeId?: string;
-  isAll?: boolean;
-}) {
-  return (
-    <StoreCard
-      id={storeId}
-      name={label}
-      color={color}
-      onClick={onClick}
-      subtitle={`${count} ${count === 1 ? "item" : "items"}`}
-      leading={
-        isAll ? (
-          <span
-            className="inline-flex shrink-0 items-center justify-center rounded-full bg-white text-lg"
-            style={{
-              width: 54,
-              height: 54,
-              color: "#6b7280",
-              border: "1px solid rgba(0,0,0,0.05)",
-              boxShadow: "0 1px 2px rgba(16,24,40,0.08)",
-            }}
-            aria-hidden
-          >
-            ★
-          </span>
-        ) : undefined
-      }
-    />
-  );
-}
 
 
 
