@@ -34,6 +34,7 @@ import { useUserShops } from "@/lib/user-shops";
 import { supabase } from "@/integrations/supabase/client";
 import { Pencil, Sparkles } from "lucide-react";
 import { StoreLogo, StoreTab, StoreCard, brandColor } from "@/lib/store-logos";
+import { ITEM_CATALOGUE } from "@/lib/item-catalogue";
 
 type Screen =
   | { name: "home" }
@@ -408,7 +409,7 @@ function StoreSection({
   );
 }
 
-/* ---------- ADD ITEM (quick add w/ favourite suggestions) ---------- */
+/* ---------- ADD ITEM (smart search: favourites first) ---------- */
 
 function AddItemScreen({ go }: { go: (s: Screen) => void }) {
   const items = useShop((s) => s.items);
@@ -417,47 +418,71 @@ function AddItemScreen({ go }: { go: (s: Screen) => void }) {
   const [name, setName] = useState("");
 
   const favourites = useMemo(() => favouriteItems(items), [items]);
-  const onListNames = new Set(listItems(items).filter((i) => !i.checked).map((i) => i.name.toLowerCase()));
+  const onListNames = useMemo(
+    () => new Set(listItems(items).filter((i) => !i.checked).map((i) => i.name.toLowerCase())),
+    [items],
+  );
 
-  const suggestions = useMemo(() => {
-    const q = name.trim().toLowerCase();
-    const pool = favourites.filter((f) => !onListNames.has(f.name.toLowerCase()));
-    if (!q) return pool.slice(0, 8);
-    return pool.filter((f) => f.name.toLowerCase().includes(q)).slice(0, 8);
-  }, [favourites, name, onListNames]);
+  const q = name.trim().toLowerCase();
+
+  // 1. Favourites matching the query always come first.
+  const favResults = useMemo(() => {
+    if (!q) return favourites.slice(0, 8);
+    return favourites.filter((f) => f.name.toLowerCase().includes(q)).slice(0, 8);
+  }, [favourites, q]);
+
+  // 2. General catalogue results, minus anything already shown as a favourite.
+  const otherResults = useMemo(() => {
+    if (!q) return [];
+    const favNames = new Set(favourites.map((f) => f.name.toLowerCase()));
+    return ITEM_CATALOGUE.filter(
+      (c) => c.toLowerCase().includes(q) && !favNames.has(c.toLowerCase()),
+    ).slice(0, 8);
+  }, [q, favourites]);
+
+  const alreadyOnList = (n: string) => onListNames.has(n.trim().toLowerCase());
 
   const addFromFavourite = async (fav: Item) => {
-    // clones the favourite into an independent list item
+    if (alreadyOnList(fav.name)) {
+      toast(`${fav.name} is already on your list`);
+      return;
+    }
     await addFavouriteToList(fav.id);
-    toast.success(`Added ${fav.name}`);
+    toast.success("Added to shopping list");
     setName("");
   };
 
-  const addTyped = async () => {
-    const v = name.trim();
+  const addPlain = async (value: string) => {
+    const v = value.trim();
     if (!v) return;
+    if (alreadyOnList(v)) {
+      toast(`${v} is already on your list`);
+      return;
+    }
     await addItem({ name: v, preferredStore: "any", isLocked: false });
-    toast.success(`Added ${v}`);
+    toast.success("Added to shopping list");
     setName("");
   };
+
+  const noResults = q.length > 0 && favResults.length === 0 && otherResults.length === 0;
 
   return (
     <div className="px-6 pt-14">
       <BackHeader go={go} />
       <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Add to Shopping List</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Start typing — tap a suggestion to add instantly.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Search — tap any result to add instantly.</p>
 
       <div className="mt-6 flex gap-2">
         <input
           autoFocus
           value={name}
           onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && addTyped()}
-          placeholder="e.g. Bananas"
+          onKeyDown={(e) => e.key === "Enter" && addPlain(name)}
+          placeholder="Search items, e.g. beans"
           className="flex-1 rounded-2xl bg-secondary px-4 py-3.5 text-base outline-none focus:ring-2 focus:ring-ring"
         />
         <button
-          onClick={addTyped}
+          onClick={() => addPlain(name)}
           disabled={!name.trim()}
           className="rounded-2xl bg-primary px-5 text-sm font-medium text-primary-foreground disabled:opacity-40"
         >
@@ -465,45 +490,92 @@ function AddItemScreen({ go }: { go: (s: Screen) => void }) {
         </button>
       </div>
 
-      <h2 className="mt-8 mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-        From your favourites
-      </h2>
-      <div className="space-y-2 pb-6">
-        {suggestions.length === 0 && (
+      <div className="mt-8 space-y-6 pb-6">
+        {favResults.length > 0 && (
+          <section>
+            <h2 className="mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              Your favourites
+            </h2>
+            <div className="space-y-2">
+              {favResults.map((f) => {
+                const already = alreadyOnList(f.name);
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => addFromFavourite(f)}
+                    className="flex w-full items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5 text-left transition active:scale-[0.99]"
+                  >
+                    <Star className="h-4 w-4 shrink-0 fill-favorite text-favorite" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">{f.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Favourite · {storeName(f.preferredStore)} {f.isLocked && "· 🔒"}
+                      </p>
+                    </div>
+                    {already ? (
+                      <Check className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Plus className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {otherResults.length > 0 && (
+          <section>
+            <h2 className="mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              Other results
+            </h2>
+            <div className="space-y-2">
+              {otherResults.map((c) => {
+                const already = alreadyOnList(c);
+                return (
+                  <button
+                    key={c}
+                    onClick={() => addPlain(c)}
+                    className="flex w-full items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5 text-left transition active:scale-[0.99]"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">{c}</p>
+                    </div>
+                    {already ? (
+                      <Check className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Plus className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {noResults && (
+          <button
+            onClick={() => addPlain(name)}
+            className="w-full rounded-3xl bg-card border border-border px-5 py-6 text-center text-sm text-muted-foreground transition active:scale-[0.99]"
+          >
+            Add “{name.trim()}” to your list
+          </button>
+        )}
+
+        {!q && favResults.length === 0 && (
           <div className="rounded-3xl bg-card border border-border px-5 py-8 text-center text-sm text-muted-foreground">
-            {favourites.length === 0 ? (
-              <>
-                No favourites yet.{" "}
-                <button onClick={() => go({ name: "favourites" })} className="font-medium text-primary">
-                  Add one
-                </button>
-                .
-              </>
-            ) : (
-              "Nothing matches."
-            )}
+            No favourites yet.{" "}
+            <button onClick={() => go({ name: "favourites" })} className="font-medium text-primary">
+              Add one
+            </button>
+            .
           </div>
         )}
-        {suggestions.map((f) => (
-          <button
-            key={f.id}
-            onClick={() => addFromFavourite(f)}
-            className="flex w-full items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5 text-left transition active:scale-[0.99]"
-          >
-            <Star className="h-4 w-4 fill-favorite text-favorite" />
-            <div className="min-w-0 flex-1">
-              <p className="font-medium">{f.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {storeName(f.preferredStore)} {f.isLocked && "· 🔒"}
-              </p>
-            </div>
-            <Plus className="h-4 w-4 text-muted-foreground" />
-          </button>
-        ))}
       </div>
     </div>
   );
 }
+
 
 /* ---------- FAVOURITES ---------- */
 
@@ -788,33 +860,52 @@ function SelectStoreScreen({
 
 /* ---------- FAVOURITES BY SHOP ---------- */
 
+/** Main high-street shops always offered as tabs, regardless of saved data. */
+const MAIN_SHOP_TABS: { id: string; name: string }[] = [
+  { id: "sainsburys", name: "Sainsbury's" },
+  { id: "tesco", name: "Tesco" },
+  { id: "aldi", name: "Aldi" },
+  { id: "lidl", name: "Lidl" },
+  { id: "costco", name: "Costco" },
+  { id: "marksandspencer", name: "M&S" },
+  { id: "coop", name: "Co-op" },
+  { id: "asda", name: "Asda" },
+  { id: "waitrose", name: "Waitrose" },
+];
+
 function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
   const shops = useGuaranteedShops();
   const items = useShop((s) => s.items);
   const addFavouriteToList = useShop((s) => s.addFavouriteToList);
   const favs = favouriteItems(items);
+  const [selected, setSelected] = useState<StoreId | null>(null);
   const onList = useMemo(
     () => new Set(listItems(items).filter((i) => !i.checked).map((i) => i.name.toLowerCase())),
     [items],
   );
 
-  const groups = useMemo(() => {
-    const g: { id: StoreId; name: string; color?: string; list: Item[] }[] = shops.map((sh) => ({
-      id: sh.id,
-      name: sh.name,
-      color: sh.color,
-      list: favs.filter((f) => f.preferredStore === sh.id),
-    }));
-    const anyStore = favs.filter((f) => f.preferredStore === "any");
-    if (anyStore.length > 0) {
-      g.push({ id: "any", name: "Any store", list: anyStore });
-    }
-    return g;
-  }, [shops, favs]);
+  // Tabs render immediately: built-in main shops + any user-created shops + "Any store".
+  const tabs = useMemo(() => {
+    const list: { id: StoreId; name: string; color?: string }[] = MAIN_SHOP_TABS.map((s) => ({ ...s }));
+    const seen = new Set(list.map((s) => s.id));
+    shops.forEach((sh) => {
+      if (seen.has(sh.id)) return;
+      seen.add(sh.id);
+      list.push({ id: sh.id, name: sh.name, color: sh.color });
+    });
+    list.push({ id: "any", name: "Any store" });
+    return list;
+  }, [shops]);
+
+  const shopFavs = selected ? favs.filter((f) => f.preferredStore === selected) : [];
 
   const add = async (f: Item) => {
+    if (onList.has(f.name.toLowerCase())) {
+      toast(`${f.name} is already on your list`);
+      return;
+    }
     await addFavouriteToList(f.id);
-    toast.success(`Added ${f.name} to your shopping list`);
+    toast.success("Added to shopping list");
   };
 
   return (
@@ -822,76 +913,75 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
       <BackHeader go={go} />
       <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Favourites by shop</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Tap the plus to add straight to your shopping list.
+        Pick a shop to see its favourites and add them in one tap.
       </p>
 
-      {favs.length === 0 && (
-        <div className="mt-6 rounded-3xl bg-card border border-border px-5 py-8 text-center text-sm text-muted-foreground">
-          No favourites yet.{" "}
-          <button onClick={() => go({ name: "favourites" })} className="font-medium text-primary">
-            Add one
-          </button>
-          .
-        </div>
-      )}
-
-      <div className="mt-6 space-y-6 pb-6">
-        {groups
-          .filter((g) => g.list.length > 0)
-          .map((g) => (
-            <section key={g.id}>
-              <div className="mb-2 flex items-center gap-3 px-1">
-                {g.id === "any" ? (
-                  <span
-                    aria-hidden
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-sm text-muted-foreground"
-                  >
-                    ★
-                  </span>
-                ) : (
-                  <StoreLogo
-                    storeId={g.id}
-                    storeName={g.name}
-                    color={brandColor(g.id, g.name, g.color)}
-                    size={32}
-                    radius="50%"
-                  />
-                )}
-                <h2 className="flex-1 text-[15px] font-semibold">{g.name}</h2>
-                <span className="text-xs text-muted-foreground">{g.list.length}</span>
-              </div>
-              <div className="space-y-2">
-                {g.list.map((f) => {
-                  const already = onList.has(f.name.toLowerCase());
-                  return (
-                    <div
-                      key={f.id}
-                      className="flex items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5"
-                    >
-                      <Star className="h-4 w-4 shrink-0 fill-favorite text-favorite" />
-                      <p className="min-w-0 flex-1 truncate font-medium">
-                        {f.name} {f.isLocked && <span className="text-xs">🔒</span>}
-                      </p>
+      <div className="mt-6 space-y-3 pb-6">
+        {tabs.map((t) => {
+          const isSel = selected === t.id;
+          const count = favs.filter((f) => f.preferredStore === t.id).length;
+          return (
+            <div key={t.id}>
+              <StoreTab
+                id={t.id === "any" ? null : t.id}
+                name={t.name}
+                color={t.color ?? null}
+                selected={isSel}
+                onClick={() => setSelected(isSel ? null : t.id)}
+              />
+              {isSel && (
+                <div className="mt-2 space-y-2 pl-1">
+                  {shopFavs.length === 0 ? (
+                    <div className="rounded-2xl bg-card border border-border px-4 py-6 text-center text-sm text-muted-foreground">
+                      No favourites yet for this shop.{" "}
                       <button
-                        onClick={() => add(f)}
-                        disabled={already}
-                        aria-label={`Add ${f.name} to shopping list`}
-                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
-                          already ? "bg-secondary text-muted-foreground" : "bg-primary text-primary-foreground"
-                        }`}
+                        onClick={() => go({ name: "favourites" })}
+                        className="font-medium text-primary"
                       >
-                        {already ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                        Add favourites
                       </button>
                     </div>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
+                  ) : (
+                    shopFavs.map((f) => {
+                      const already = onList.has(f.name.toLowerCase());
+                      return (
+                        <div
+                          key={f.id}
+                          className="flex items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5"
+                        >
+                          <Star className="h-4 w-4 shrink-0 fill-favorite text-favorite" />
+                          <p className="min-w-0 flex-1 truncate font-medium">
+                            {f.name} {f.isLocked && <span className="text-xs">🔒</span>}
+                          </p>
+                          <button
+                            onClick={() => add(f)}
+                            disabled={already}
+                            aria-label={`Add ${f.name} to shopping list`}
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
+                              already
+                                ? "bg-secondary text-muted-foreground"
+                                : "bg-primary text-primary-foreground"
+                            }`}
+                          >
+                            {already ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+              {!isSel && count > 0 && (
+                <p className="mt-1 pl-4 text-[11px] text-muted-foreground">{count} favourite{count === 1 ? "" : "s"}</p>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
+
 
 /* ---------- STORE FAVOURITES (dedicated screen) ---------- */
 
