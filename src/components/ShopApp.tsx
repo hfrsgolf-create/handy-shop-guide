@@ -860,33 +860,53 @@ function SelectStoreScreen({
 
 /* ---------- FAVOURITES BY SHOP ---------- */
 
+/** Main high-street shops always offered as tabs, regardless of saved data. */
+const MAIN_SHOP_TABS: { id: string; name: string }[] = [
+  { id: "sainsburys", name: "Sainsbury's" },
+  { id: "tesco", name: "Tesco" },
+  { id: "aldi", name: "Aldi" },
+  { id: "lidl", name: "Lidl" },
+  { id: "costco", name: "Costco" },
+  { id: "marksandspencer", name: "M&S" },
+  { id: "coop", name: "Co-op" },
+  { id: "asda", name: "Asda" },
+  { id: "waitrose", name: "Waitrose" },
+];
+
 function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
   const shops = useGuaranteedShops();
   const items = useShop((s) => s.items);
   const addFavouriteToList = useShop((s) => s.addFavouriteToList);
   const favs = favouriteItems(items);
+  const [selected, setSelected] = useState<StoreId | null>(null);
   const onList = useMemo(
     () => new Set(listItems(items).filter((i) => !i.checked).map((i) => i.name.toLowerCase())),
     [items],
   );
 
-  const groups = useMemo(() => {
-    const g: { id: StoreId; name: string; color?: string; list: Item[] }[] = shops.map((sh) => ({
-      id: sh.id,
-      name: sh.name,
-      color: sh.color,
-      list: favs.filter((f) => f.preferredStore === sh.id),
-    }));
-    const anyStore = favs.filter((f) => f.preferredStore === "any");
-    if (anyStore.length > 0) {
-      g.push({ id: "any", name: "Any store", list: anyStore });
-    }
-    return g;
-  }, [shops, favs]);
+  // Tabs render immediately: built-in main shops + any user-created shops + "Any store".
+  const tabs = useMemo(() => {
+    const list: { id: StoreId; name: string; color?: string }[] = MAIN_SHOP_TABS.map((s) => ({ ...s }));
+    const seen = new Set(list.map((s) => s.id));
+    shops.forEach((sh) => {
+      if (seen.has(sh.id)) return;
+      seen.add(sh.id);
+      list.push({ id: sh.id, name: sh.name, color: sh.color });
+    });
+    list.push({ id: "any", name: "Any store" });
+    return list;
+  }, [shops]);
+
+  const current = tabs.find((t) => t.id === selected) ?? null;
+  const shopFavs = selected ? favs.filter((f) => f.preferredStore === selected) : [];
 
   const add = async (f: Item) => {
+    if (onList.has(f.name.toLowerCase())) {
+      toast(`${f.name} is already on your list`);
+      return;
+    }
     await addFavouriteToList(f.id);
-    toast.success(`Added ${f.name} to your shopping list`);
+    toast.success("Added to shopping list");
   };
 
   return (
@@ -894,76 +914,76 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
       <BackHeader go={go} />
       <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Favourites by shop</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Tap the plus to add straight to your shopping list.
+        Pick a shop to see its favourites and add them in one tap.
       </p>
 
-      {favs.length === 0 && (
-        <div className="mt-6 rounded-3xl bg-card border border-border px-5 py-8 text-center text-sm text-muted-foreground">
-          No favourites yet.{" "}
-          <button onClick={() => go({ name: "favourites" })} className="font-medium text-primary">
-            Add one
-          </button>
-          .
-        </div>
-      )}
-
-      <div className="mt-6 space-y-6 pb-6">
-        {groups
-          .filter((g) => g.list.length > 0)
-          .map((g) => (
-            <section key={g.id}>
-              <div className="mb-2 flex items-center gap-3 px-1">
-                {g.id === "any" ? (
-                  <span
-                    aria-hidden
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-sm text-muted-foreground"
-                  >
-                    ★
-                  </span>
-                ) : (
-                  <StoreLogo
-                    storeId={g.id}
-                    storeName={g.name}
-                    color={brandColor(g.id, g.name, g.color)}
-                    size={32}
-                    radius="50%"
-                  />
-                )}
-                <h2 className="flex-1 text-[15px] font-semibold">{g.name}</h2>
-                <span className="text-xs text-muted-foreground">{g.list.length}</span>
-              </div>
-              <div className="space-y-2">
-                {g.list.map((f) => {
-                  const already = onList.has(f.name.toLowerCase());
-                  return (
-                    <div
-                      key={f.id}
-                      className="flex items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5"
-                    >
-                      <Star className="h-4 w-4 shrink-0 fill-favorite text-favorite" />
-                      <p className="min-w-0 flex-1 truncate font-medium">
-                        {f.name} {f.isLocked && <span className="text-xs">🔒</span>}
-                      </p>
+      <div className="mt-6 space-y-3 pb-6">
+        {tabs.map((t) => {
+          const isSel = selected === t.id;
+          const count = favs.filter((f) => f.preferredStore === t.id).length;
+          return (
+            <div key={t.id}>
+              <StoreTab
+                id={t.id === "any" ? null : t.id}
+                name={t.name}
+                color={t.color ?? null}
+                selected={isSel}
+                onClick={() => setSelected(isSel ? null : t.id)}
+              />
+              {isSel && (
+                <div className="mt-2 space-y-2 pl-1">
+                  {shopFavs.length === 0 ? (
+                    <div className="rounded-2xl bg-card border border-border px-4 py-6 text-center text-sm text-muted-foreground">
+                      No favourites yet for this shop.{" "}
                       <button
-                        onClick={() => add(f)}
-                        disabled={already}
-                        aria-label={`Add ${f.name} to shopping list`}
-                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
-                          already ? "bg-secondary text-muted-foreground" : "bg-primary text-primary-foreground"
-                        }`}
+                        onClick={() => go({ name: "favourites" })}
+                        className="font-medium text-primary"
                       >
-                        {already ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                        Add favourites
                       </button>
                     </div>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
+                  ) : (
+                    shopFavs.map((f) => {
+                      const already = onList.has(f.name.toLowerCase());
+                      return (
+                        <div
+                          key={f.id}
+                          className="flex items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5"
+                        >
+                          <Star className="h-4 w-4 shrink-0 fill-favorite text-favorite" />
+                          <p className="min-w-0 flex-1 truncate font-medium">
+                            {f.name} {f.isLocked && <span className="text-xs">🔒</span>}
+                          </p>
+                          <button
+                            onClick={() => add(f)}
+                            disabled={already}
+                            aria-label={`Add ${f.name} to shopping list`}
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
+                              already
+                                ? "bg-secondary text-muted-foreground"
+                                : "bg-primary text-primary-foreground"
+                            }`}
+                          >
+                            {already ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+              {!isSel && count > 0 && (
+                <p className="mt-1 pl-4 text-[11px] text-muted-foreground">{count} favourite{count === 1 ? "" : "s"}</p>
+              )}
+            </div>
+          );
+        })}
       </div>
+      {current === null && null}
     </div>
   );
 }
+
 
 /* ---------- STORE FAVOURITES (dedicated screen) ---------- */
 
