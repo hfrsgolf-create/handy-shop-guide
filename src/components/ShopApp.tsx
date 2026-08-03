@@ -509,19 +509,24 @@ function AddItemScreen({ go }: { go: (s: Screen) => void }) {
 
 const FAV_ONBOARDING_KEY = "favouritesOnboardingDismissed_v1";
 
-function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
+function FavouritesScreen({
+  go,
+  draft,
+  setDraft,
+}: {
+  go: (s: Screen) => void;
+  draft: FavDraft;
+  setDraft: React.Dispatch<React.SetStateAction<FavDraft>>;
+}) {
   const shops = useGuaranteedShops();
-  const items = useShop((s) => s.items);
   const addFavourite = useShop((s) => s.addFavourite);
-  const favs = favouriteItems(items);
 
-  const [brand, setBrand] = useState("");
-  const [product, setProduct] = useState("");
-  const [store, setStore] = useState<StoreId>("any");
-  const [locked, setLocked] = useState(false);
+  const { brand, product, store, locked } = draft;
   const [lockPrompt, setLockPrompt] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
+
+  const selectedShop = shops.find((s) => s.id === store);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -544,15 +549,12 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
       isLocked: locked && store !== "any",
     });
     toast.success(`Saved ${combined} as favourite`);
-    setBrand("");
-    setProduct("");
-    setStore("any");
-    setLocked(false);
+    setDraft(EMPTY_FAV_DRAFT);
   };
 
   const requestLockToggle = (next: boolean) => {
     if (!next) {
-      setLocked(false);
+      setDraft((d) => ({ ...d, locked: false }));
       return;
     }
     if (store === "any") {
@@ -561,14 +563,6 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
     }
     setLockPrompt(true);
   };
-
-  const tabCounts = useMemo(() => {
-    const counts: Record<string, number> = { any: favs.length };
-    for (const sh of shops) {
-      counts[sh.id] = favs.filter((f) => f.preferredStore === sh.id).length;
-    }
-    return counts;
-  }, [favs, shops]);
 
   const canSubmit = (brand.trim() + product.trim()).length > 0;
   const lockActive = locked && store !== "any";
@@ -581,13 +575,44 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
         Save items you buy often — they'll suggest as you type.
       </p>
 
+      {/* Store selector — opens a dedicated screen */}
+      <button
+        type="button"
+        onClick={() => go({ name: "selectStore" })}
+        className="mt-6 flex w-full items-center gap-3 rounded-3xl bg-card border border-border shadow-card px-4 py-3.5 text-left transition active:scale-[0.99]"
+      >
+        {store === "any" ? (
+          <span
+            aria-hidden
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary text-base text-muted-foreground"
+          >
+            ★
+          </span>
+        ) : (
+          <StoreLogo
+            storeId={store}
+            storeName={selectedShop?.name ?? storeName(store)}
+            color={brandColor(store, selectedShop?.name, selectedShop?.color)}
+            size={44}
+            radius="50%"
+          />
+        )}
+        <span className="min-w-0 flex-1">
+          <span className="block text-xs font-medium text-muted-foreground">Store</span>
+          <span className="block truncate text-[15px] font-semibold">
+            {store === "any" ? "Any store" : selectedShop?.name ?? storeName(store)}
+          </span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+      </button>
+
       {/* Add form */}
-      <div className="mt-6 space-y-3 rounded-3xl bg-card border border-border shadow-card p-5">
+      <div className="mt-3 space-y-3 rounded-3xl bg-card border border-border shadow-card p-5">
         <div className="space-y-2">
           <label className="block text-xs font-medium text-muted-foreground">Brand</label>
           <input
             value={brand}
-            onChange={(e) => setBrand(e.target.value)}
+            onChange={(e) => setDraft((d) => ({ ...d, brand: e.target.value }))}
             placeholder="e.g. Heinz"
             className="w-full rounded-2xl bg-secondary px-4 py-3 text-base outline-none focus:ring-2 focus:ring-ring"
           />
@@ -596,31 +621,11 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
           <label className="block text-xs font-medium text-muted-foreground">Product</label>
           <input
             value={product}
-            onChange={(e) => setProduct(e.target.value)}
+            onChange={(e) => setDraft((d) => ({ ...d, product: e.target.value }))}
             onKeyDown={(e) => e.key === "Enter" && canSubmit && submit()}
             placeholder="e.g. Baked Beans"
             className="w-full rounded-2xl bg-secondary px-4 py-3 text-base outline-none focus:ring-2 focus:ring-ring"
           />
-        </div>
-
-        <div className="space-y-2">
-          <label className="block text-xs font-medium text-muted-foreground">Select store</label>
-          <select
-            value={store}
-            onChange={(e) => {
-              const v = e.target.value as StoreId;
-              setStore(v);
-              if (v === "any") setLocked(false);
-            }}
-            className="w-full rounded-2xl bg-secondary px-4 py-3 text-base outline-none focus:ring-2 focus:ring-ring appearance-none"
-          >
-            <option value="any">Any store</option>
-            {shops.map((sh) => (
-              <option key={sh.id} value={sh.id}>
-                {sh.name}
-              </option>
-            ))}
-          </select>
         </div>
 
         {/* Lock to store toggle row */}
@@ -628,9 +633,7 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
           type="button"
           onClick={() => requestLockToggle(!lockActive)}
           className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${
-            lockActive
-              ? "bg-accent border-primary/40"
-              : "bg-secondary border-transparent"
+            lockActive ? "bg-accent border-primary/40" : "bg-secondary border-transparent"
           }`}
         >
           <span className={`flex items-center gap-2 text-sm ${lockActive ? "font-semibold text-primary" : "font-medium text-foreground"}`}>
@@ -661,30 +664,13 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
         </button>
       </div>
 
-      {/* Store selector list */}
-      <h2 className="mt-8 mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-        View favourites by store
-      </h2>
-
-      <div className="space-y-3 pb-6">
-        <FavStoreRow
-          onClick={() => go({ name: "storeFavourites", storeId: "any" })}
-          label="All stores"
-          count={tabCounts.any ?? 0}
-          isAll
-        />
-        {shops.map((sh) => (
-          <FavStoreRow
-            key={sh.id}
-            onClick={() => go({ name: "storeFavourites", storeId: sh.id })}
-            label={sh.name}
-            count={tabCounts[sh.id] ?? 0}
-            storeId={sh.id}
-            color={sh.color}
-          />
-        ))}
-
-      </div>
+      <button
+        onClick={() => go({ name: "favouritesByShop" })}
+        className="mt-4 mb-6 flex w-full items-center justify-center gap-2 rounded-full bg-secondary py-3 text-sm font-medium"
+      >
+        View favourites by shop
+        <ChevronRight className="h-4 w-4" />
+      </button>
 
       {/* Lock confirmation */}
       {lockPrompt && (
@@ -702,7 +688,7 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
             </button>
             <button
               onClick={() => {
-                setLocked(true);
+                setDraft((d) => ({ ...d, locked: true }));
                 setLockPrompt(false);
               }}
               className="flex-1 rounded-full bg-primary py-3 text-sm font-medium text-primary-foreground"
@@ -739,6 +725,170 @@ function FavouritesScreen({ go }: { go: (s: Screen) => void }) {
           </button>
         </ModalShell>
       )}
+    </div>
+  );
+}
+
+/* ---------- SELECT STORE (dedicated step) ---------- */
+
+function SelectStoreScreen({
+  go,
+  value,
+  onSelect,
+}: {
+  go: (s: Screen) => void;
+  value: StoreId;
+  onSelect: (id: StoreId) => void;
+}) {
+  const shops = useGuaranteedShops();
+
+  return (
+    <div className="px-6 pt-14">
+      <BackHeader go={go} to={{ name: "favourites" }} label="Add favourites" />
+      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Select store</h1>
+      <p className="mt-1 text-sm text-muted-foreground">Tap a store to use it for this favourite.</p>
+
+      <div className="mt-6 space-y-3 pb-6">
+        <StoreCard
+          name="Any store"
+          selected={value === "any"}
+          showChevron={false}
+          onClick={() => onSelect("any")}
+          subtitle="Appears on every list"
+          leading={
+            <span
+              aria-hidden
+              className="inline-flex shrink-0 items-center justify-center rounded-full bg-white text-lg"
+              style={{
+                width: 54,
+                height: 54,
+                color: "#6b7280",
+                border: "1px solid rgba(0,0,0,0.05)",
+                boxShadow: "0 1px 2px rgba(16,24,40,0.08)",
+              }}
+            >
+              ★
+            </span>
+          }
+        />
+        {shops.map((sh) => (
+          <StoreTab
+            key={sh.id}
+            id={sh.id}
+            name={sh.name}
+            color={sh.color}
+            selected={value === sh.id}
+            onClick={() => onSelect(sh.id)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- FAVOURITES BY SHOP ---------- */
+
+function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
+  const shops = useGuaranteedShops();
+  const items = useShop((s) => s.items);
+  const addFavouriteToList = useShop((s) => s.addFavouriteToList);
+  const favs = favouriteItems(items);
+  const onList = useMemo(
+    () => new Set(listItems(items).filter((i) => !i.checked).map((i) => i.name.toLowerCase())),
+    [items],
+  );
+
+  const groups = useMemo(() => {
+    const g: { id: StoreId; name: string; color?: string; list: Item[] }[] = shops.map((sh) => ({
+      id: sh.id,
+      name: sh.name,
+      color: sh.color,
+      list: favs.filter((f) => f.preferredStore === sh.id),
+    }));
+    const anyStore = favs.filter((f) => f.preferredStore === "any");
+    if (anyStore.length > 0) {
+      g.push({ id: "any", name: "Any store", list: anyStore });
+    }
+    return g;
+  }, [shops, favs]);
+
+  const add = async (f: Item) => {
+    await addFavouriteToList(f.id);
+    toast.success(`Added ${f.name} to your shopping list`);
+  };
+
+  return (
+    <div className="px-6 pt-14">
+      <BackHeader go={go} />
+      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Favourites by shop</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Tap the plus to add straight to your shopping list.
+      </p>
+
+      {favs.length === 0 && (
+        <div className="mt-6 rounded-3xl bg-card border border-border px-5 py-8 text-center text-sm text-muted-foreground">
+          No favourites yet.{" "}
+          <button onClick={() => go({ name: "favourites" })} className="font-medium text-primary">
+            Add one
+          </button>
+          .
+        </div>
+      )}
+
+      <div className="mt-6 space-y-6 pb-6">
+        {groups
+          .filter((g) => g.list.length > 0)
+          .map((g) => (
+            <section key={g.id}>
+              <div className="mb-2 flex items-center gap-3 px-1">
+                {g.id === "any" ? (
+                  <span
+                    aria-hidden
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-sm text-muted-foreground"
+                  >
+                    ★
+                  </span>
+                ) : (
+                  <StoreLogo
+                    storeId={g.id}
+                    storeName={g.name}
+                    color={brandColor(g.id, g.name, g.color)}
+                    size={32}
+                    radius="50%"
+                  />
+                )}
+                <h2 className="flex-1 text-[15px] font-semibold">{g.name}</h2>
+                <span className="text-xs text-muted-foreground">{g.list.length}</span>
+              </div>
+              <div className="space-y-2">
+                {g.list.map((f) => {
+                  const already = onList.has(f.name.toLowerCase());
+                  return (
+                    <div
+                      key={f.id}
+                      className="flex items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5"
+                    >
+                      <Star className="h-4 w-4 shrink-0 fill-favorite text-favorite" />
+                      <p className="min-w-0 flex-1 truncate font-medium">
+                        {f.name} {f.isLocked && <span className="text-xs">🔒</span>}
+                      </p>
+                      <button
+                        onClick={() => add(f)}
+                        disabled={already}
+                        aria-label={`Add ${f.name} to shopping list`}
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
+                          already ? "bg-secondary text-muted-foreground" : "bg-primary text-primary-foreground"
+                        }`}
+                      >
+                        {already ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+      </div>
     </div>
   );
 }
