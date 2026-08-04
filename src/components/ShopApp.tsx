@@ -666,6 +666,55 @@ function FavouritesScreen({
         Save items you buy often — they'll suggest as you type.
       </p>
 
+      {/* Scan a product barcode */}
+      <button
+        type="button"
+        onClick={() => setScanning(true)}
+        className="mt-6 flex w-full items-center gap-3 rounded-3xl bg-primary px-4 py-3.5 text-left text-primary-foreground shadow-card transition active:scale-[0.99]"
+      >
+        <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15">
+          <ScanLine className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-semibold">Scan item</span>
+          <span className="block text-xs opacity-80">Use your camera to fill in name & photo</span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0 opacity-80" />
+      </button>
+
+      {storeHint && (
+        <button
+          type="button"
+          onClick={() => go({ name: "selectStore" })}
+          className="mt-3 flex w-full items-center gap-2 rounded-2xl bg-accent px-4 py-3 text-left text-sm font-medium text-primary"
+        >
+          Choose which store this is for
+          <ChevronRight className="ml-auto h-4 w-4" />
+        </button>
+      )}
+
+      {scanning && (
+        <ScanProductSheet
+          onClose={() => setScanning(false)}
+          onUse={(r) => {
+            setDraft((d) => ({
+              ...d,
+              brand: r.brand,
+              product: r.product,
+              image: r.image,
+            }));
+            setScanning(false);
+            // Store can't be inferred from a barcode — nudge the user if none is picked yet.
+            setStoreHint(store === "any");
+            toast.success(
+              [r.brand, r.product].filter(Boolean).join(" ") + " scanned — review and save",
+            );
+          }}
+        />
+      )}
+
+
+
       {/* Store selector — opens a dedicated screen */}
       <button
         type="button"
