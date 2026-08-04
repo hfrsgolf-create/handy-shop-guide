@@ -48,8 +48,8 @@ type Screen =
   | { name: "manageShops" }
   | { name: "masterList" };
 
-type FavDraft = { brand: string; product: string; store: StoreId; locked: boolean };
-const EMPTY_FAV_DRAFT: FavDraft = { brand: "", product: "", store: "any", locked: false };
+type FavDraft = { brand: string; product: string; store: StoreId; locked: boolean; image?: string };
+const EMPTY_FAV_DRAFT: FavDraft = { brand: "", product: "", store: "any", locked: false, image: "" };
 
 
 export function ShopApp() {
