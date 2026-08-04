@@ -35,6 +35,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Pencil, Sparkles } from "lucide-react";
 import { StoreLogo, StoreTab, StoreCard, brandColor } from "@/lib/store-logos";
 import { ITEM_CATALOGUE } from "@/lib/item-catalogue";
+import { fileToSmallDataUrl } from "@/lib/barcode-scan";
+import { ScanProductSheet } from "@/components/ScanProductSheet";
 
 type Screen =
   | { name: "home" }
