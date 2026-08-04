@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Toaster, toast } from "sonner";
 
@@ -19,6 +19,8 @@ import {
   ArrowUp,
   ArrowDown,
   Trash2,
+  ScanLine,
+  Image as ImageIcon,
 } from "lucide-react";
 import {
   useShop,
@@ -35,6 +37,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Pencil, Sparkles } from "lucide-react";
 import { StoreLogo, StoreTab, StoreCard, brandColor } from "@/lib/store-logos";
 import { ITEM_CATALOGUE } from "@/lib/item-catalogue";
+import { fileToSmallDataUrl } from "@/lib/barcode-scan";
+import { ScanProductSheet } from "@/components/ScanProductSheet";
 
 type Screen =
   | { name: "home" }
@@ -48,8 +52,8 @@ type Screen =
   | { name: "manageShops" }
   | { name: "masterList" };
 
-type FavDraft = { brand: string; product: string; store: StoreId; locked: boolean };
-const EMPTY_FAV_DRAFT: FavDraft = { brand: "", product: "", store: "any", locked: false };
+type FavDraft = { brand: string; product: string; store: StoreId; locked: boolean; image?: string };
+const EMPTY_FAV_DRAFT: FavDraft = { brand: "", product: "", store: "any", locked: false, image: "" };
 
 
 export function ShopApp() {
@@ -594,9 +598,13 @@ function FavouritesScreen({
   const addFavourite = useShop((s) => s.addFavourite);
 
   const { brand, product, store, locked } = draft;
+  const image = draft.image ?? "";
   const [lockPrompt, setLockPrompt] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [storeHint, setStoreHint] = useState(false);
+  const uploadRef = useRef<HTMLInputElement | null>(null);
 
   const selectedShop = shops.find((s) => s.id === store);
 
@@ -619,9 +627,11 @@ function FavouritesScreen({
       name: combined,
       preferredStore: store,
       isLocked: locked && store !== "any",
+      image: image || undefined,
     });
     toast.success(`Saved ${combined} as favourite`);
     setDraft(EMPTY_FAV_DRAFT);
+    setStoreHint(false);
   };
 
   const requestLockToggle = (next: boolean) => {
@@ -636,8 +646,19 @@ function FavouritesScreen({
     setLockPrompt(true);
   };
 
+  const uploadImage = async (file?: File | null) => {
+    if (!file) return;
+    try {
+      const url = await fileToSmallDataUrl(file);
+      setDraft((d) => ({ ...d, image: url }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't read that image");
+    }
+  };
+
   const canSubmit = (brand.trim() + product.trim()).length > 0;
   const lockActive = locked && store !== "any";
+
 
   return (
     <div className="px-6 pt-14">
@@ -646,6 +667,55 @@ function FavouritesScreen({
       <p className="mt-1 text-sm text-muted-foreground">
         Save items you buy often — they'll suggest as you type.
       </p>
+
+      {/* Scan a product barcode */}
+      <button
+        type="button"
+        onClick={() => setScanning(true)}
+        className="mt-6 flex w-full items-center gap-3 rounded-3xl bg-primary px-4 py-3.5 text-left text-primary-foreground shadow-card transition active:scale-[0.99]"
+      >
+        <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15">
+          <ScanLine className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-semibold">Scan item</span>
+          <span className="block text-xs opacity-80">Use your camera to fill in name & photo</span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0 opacity-80" />
+      </button>
+
+      {storeHint && (
+        <button
+          type="button"
+          onClick={() => go({ name: "selectStore" })}
+          className="mt-3 flex w-full items-center gap-2 rounded-2xl bg-accent px-4 py-3 text-left text-sm font-medium text-primary"
+        >
+          Choose which store this is for
+          <ChevronRight className="ml-auto h-4 w-4" />
+        </button>
+      )}
+
+      {scanning && (
+        <ScanProductSheet
+          onClose={() => setScanning(false)}
+          onUse={(r) => {
+            setDraft((d) => ({
+              ...d,
+              brand: r.brand,
+              product: r.product,
+              image: r.image,
+            }));
+            setScanning(false);
+            // Store can't be inferred from a barcode — nudge the user if none is picked yet.
+            setStoreHint(store === "any");
+            toast.success(
+              [r.brand, r.product].filter(Boolean).join(" ") + " scanned — review and save",
+            );
+          }}
+        />
+      )}
+
+
 
       {/* Store selector — opens a dedicated screen */}
       <button
@@ -699,6 +769,51 @@ function FavouritesScreen({
             className="w-full rounded-2xl bg-secondary px-4 py-3 text-base outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
+
+        {/* Product image (from scan or upload) */}
+        <div className="flex items-center gap-3 rounded-2xl bg-secondary p-3">
+          {image ? (
+            <img
+              src={image}
+              alt={product || "Product"}
+              loading="lazy"
+              className="h-12 w-12 shrink-0 rounded-xl object-cover"
+            />
+          ) : (
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-card text-muted-foreground">
+              <ImageIcon className="h-4 w-4" />
+            </span>
+          )}
+          <span className="min-w-0 flex-1 text-xs text-muted-foreground">
+            {image ? "Photo attached" : "No photo yet — scan or upload one"}
+          </span>
+          <input
+            ref={uploadRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => void uploadImage(e.target.files?.[0])}
+          />
+          <button
+            type="button"
+            onClick={() => uploadRef.current?.click()}
+            className="shrink-0 rounded-full bg-card px-3 py-2 text-xs font-medium"
+          >
+            {image ? "Change" : "Upload"}
+          </button>
+          {image && (
+            <button
+              type="button"
+              onClick={() => setDraft((d) => ({ ...d, image: "" }))}
+              aria-label="Remove photo"
+              className="shrink-0 rounded-full bg-card p-2 text-muted-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
+
 
         {/* Lock to store toggle row */}
         <button
@@ -1025,6 +1140,7 @@ function FavEditSheet({
   const [name, setName] = useState(item.name);
   const [store, setStore] = useState<StoreId>(item.preferredStore);
   const [image, setImage] = useState(item.image ?? "");
+  const editUploadRef = useRef<HTMLInputElement | null>(null);
   const [locked, setLocked] = useState(item.isLocked);
   const [saving, setSaving] = useState(false);
 
@@ -1059,13 +1175,55 @@ function FavEditSheet({
         placeholder="Item name"
       />
 
-      <label className="mt-4 block text-xs font-medium text-muted-foreground">Image URL (optional)</label>
+      <label className="mt-4 block text-xs font-medium text-muted-foreground">Photo (optional)</label>
+      <div className="mt-1 flex items-center gap-3">
+        {image ? (
+          <img src={image} alt="" loading="lazy" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+        ) : (
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
+            <ImageIcon className="h-4 w-4" />
+          </span>
+        )}
+        <input
+          ref={editUploadRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            try {
+              setImage(await fileToSmallDataUrl(file));
+            } catch {
+              toast.error("Couldn't read that image");
+            }
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => editUploadRef.current?.click()}
+          className="rounded-full bg-secondary px-4 py-2 text-xs font-medium"
+        >
+          {image ? "Change photo" : "Upload photo"}
+        </button>
+        {image && (
+          <button
+            type="button"
+            onClick={() => setImage("")}
+            aria-label="Remove photo"
+            className="rounded-full bg-secondary p-2 text-muted-foreground"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
       <input
-        value={image}
+        value={image.startsWith("data:") ? "" : image}
         onChange={(e) => setImage(e.target.value)}
-        className="mt-1 w-full rounded-2xl bg-secondary px-4 py-3 text-sm outline-none"
-        placeholder="https://…"
+        className="mt-2 w-full rounded-2xl bg-secondary px-4 py-3 text-sm outline-none"
+        placeholder="…or paste an image URL"
       />
+
 
       <label className="mt-4 block text-xs font-medium text-muted-foreground">Move to store</label>
       <div className="mt-2 max-h-44 space-y-2 overflow-y-auto pr-1">
