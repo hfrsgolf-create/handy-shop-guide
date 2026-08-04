@@ -594,9 +594,13 @@ function FavouritesScreen({
   const addFavourite = useShop((s) => s.addFavourite);
 
   const { brand, product, store, locked } = draft;
+  const image = draft.image ?? "";
   const [lockPrompt, setLockPrompt] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [storeHint, setStoreHint] = useState(false);
+  const uploadRef = useRef<HTMLInputElement | null>(null);
 
   const selectedShop = shops.find((s) => s.id === store);
 
@@ -619,9 +623,11 @@ function FavouritesScreen({
       name: combined,
       preferredStore: store,
       isLocked: locked && store !== "any",
+      image: image || undefined,
     });
     toast.success(`Saved ${combined} as favourite`);
     setDraft(EMPTY_FAV_DRAFT);
+    setStoreHint(false);
   };
 
   const requestLockToggle = (next: boolean) => {
@@ -636,8 +642,19 @@ function FavouritesScreen({
     setLockPrompt(true);
   };
 
+  const uploadImage = async (file?: File | null) => {
+    if (!file) return;
+    try {
+      const url = await fileToSmallDataUrl(file);
+      setDraft((d) => ({ ...d, image: url }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't read that image");
+    }
+  };
+
   const canSubmit = (brand.trim() + product.trim()).length > 0;
   const lockActive = locked && store !== "any";
+
 
   return (
     <div className="px-6 pt-14">
