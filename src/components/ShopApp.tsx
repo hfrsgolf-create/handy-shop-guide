@@ -1140,6 +1140,7 @@ function FavEditSheet({
   const [name, setName] = useState(item.name);
   const [store, setStore] = useState<StoreId>(item.preferredStore);
   const [image, setImage] = useState(item.image ?? "");
+  const editUploadRef = useRef<HTMLInputElement | null>(null);
   const [locked, setLocked] = useState(item.isLocked);
   const [saving, setSaving] = useState(false);
 
