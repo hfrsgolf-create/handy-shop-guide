@@ -24,6 +24,7 @@ export type Item = {
   onList: boolean;
   createdAt: number;
   deal?: Deal;
+  image?: string;
 };
 
 export type Activity = { id: string; text: string; at: number };
@@ -41,6 +42,7 @@ type DbItem = {
   deal_store: string | null;
   deal_price: number | null;
   deal_expiry: string | null;
+  image_url: string | null;
 };
 
 const toItem = (r: DbItem): Item => ({
@@ -53,6 +55,7 @@ const toItem = (r: DbItem): Item => ({
   checked: r.checked,
   onList: r.on_list ?? true,
   createdAt: new Date(r.created_at).getTime(),
+  image: r.image_url ?? undefined,
   deal: r.deal_store && r.deal_expiry
     ? {
         store: r.deal_store as Exclude<StoreId, "any">,
@@ -77,8 +80,13 @@ type State = {
     notes?: string;
     favorite?: boolean;
     onList?: boolean;
+    image?: string;
   }) => Promise<void>;
-  addFavourite: (i: { name: string; preferredStore: StoreId; isLocked: boolean; notes?: string }) => Promise<void>;
+  addFavourite: (i: { name: string; preferredStore: StoreId; isLocked: boolean; notes?: string; image?: string }) => Promise<void>;
+  updateItem: (
+    id: string,
+    patch: { name?: string; preferredStore?: StoreId; isLocked?: boolean; image?: string | null },
+  ) => Promise<void>;
   addFavouriteToList: (favId: string) => Promise<void>;
   removeFavourite: (id: string) => Promise<void>;
   toggleCheck: (id: string) => Promise<void>;
@@ -128,7 +136,7 @@ export const useShop = create<State>((set, get) => ({
     });
   },
 
-  addItem: async ({ name, preferredStore, isLocked, notes, favorite, onList }) => {
+  addItem: async ({ name, preferredStore, isLocked, notes, favorite, onList, image }) => {
     const { householdId, userName } = get();
     if (!householdId) return;
     const { data, error } = await supabase
@@ -141,6 +149,7 @@ export const useShop = create<State>((set, get) => ({
         notes: notes || null,
         favorite: !!favorite,
         on_list: onList ?? !favorite,
+        image_url: image || null,
         created_by_name: userName,
       })
       .select("*")
@@ -165,8 +174,34 @@ export const useShop = create<State>((set, get) => ({
   },
 
   // Favourites are stored as their own rows that never sit on the shopping list.
-  addFavourite: async ({ name, preferredStore, isLocked, notes }) => {
-    await get().addItem({ name, preferredStore, isLocked, notes, favorite: true, onList: false });
+  addFavourite: async ({ name, preferredStore, isLocked, notes, image }) => {
+    await get().addItem({ name, preferredStore, isLocked, notes, image, favorite: true, onList: false });
+  },
+
+  // Edits an existing row in place (used by the favourites management screen).
+  updateItem: async (id, patch) => {
+    const it = get().items.find((i) => i.id === id);
+    if (!it) return;
+    const next: Item = {
+      ...it,
+      ...(patch.name !== undefined ? { name: patch.name } : {}),
+      ...(patch.preferredStore !== undefined ? { preferredStore: patch.preferredStore } : {}),
+      ...(patch.isLocked !== undefined ? { isLocked: patch.isLocked } : {}),
+      ...(patch.image !== undefined ? { image: patch.image || undefined } : {}),
+    };
+    set({ items: get().items.map((x) => (x.id === id ? next : x)) });
+    const db: {
+      name?: string;
+      preferred_store?: string;
+      is_locked?: boolean;
+      image_url?: string | null;
+    } = {};
+    if (patch.name !== undefined) db.name = patch.name;
+    if (patch.preferredStore !== undefined) db.preferred_store = patch.preferredStore;
+    if (patch.isLocked !== undefined) db.is_locked = patch.isLocked;
+    if (patch.image !== undefined) db.image_url = patch.image || null;
+    const { error } = await supabase.from("items").update(db).eq("id", id);
+    if (error) throw new Error(error.message);
   },
 
   // Adding a favourite to the list creates an independent clone — no shared row/reference.
@@ -178,6 +213,7 @@ export const useShop = create<State>((set, get) => ({
       preferredStore: fav.preferredStore,
       isLocked: fav.isLocked,
       notes: fav.notes,
+      image: fav.image,
       favorite: false,
       onList: true,
     });

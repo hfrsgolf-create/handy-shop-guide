@@ -73,6 +73,7 @@ export type Database = {
           favorite: boolean
           household_id: string
           id: string
+          image_url: string | null
           is_locked: boolean
           name: string
           notes: string | null
@@ -90,6 +91,7 @@ export type Database = {
           favorite?: boolean
           household_id: string
           id?: string
+          image_url?: string | null
           is_locked?: boolean
           name: string
           notes?: string | null
@@ -107,6 +109,7 @@ export type Database = {
           favorite?: boolean
           household_id?: string
           id?: string
+          image_url?: string | null
           is_locked?: boolean
           name?: string
           notes?: string | null
