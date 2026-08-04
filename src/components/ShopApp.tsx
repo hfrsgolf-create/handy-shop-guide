@@ -1174,13 +1174,55 @@ function FavEditSheet({
         placeholder="Item name"
       />
 
-      <label className="mt-4 block text-xs font-medium text-muted-foreground">Image URL (optional)</label>
+      <label className="mt-4 block text-xs font-medium text-muted-foreground">Photo (optional)</label>
+      <div className="mt-1 flex items-center gap-3">
+        {image ? (
+          <img src={image} alt="" loading="lazy" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+        ) : (
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
+            <ImageIcon className="h-4 w-4" />
+          </span>
+        )}
+        <input
+          ref={editUploadRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            try {
+              setImage(await fileToSmallDataUrl(file));
+            } catch {
+              toast.error("Couldn't read that image");
+            }
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => editUploadRef.current?.click()}
+          className="rounded-full bg-secondary px-4 py-2 text-xs font-medium"
+        >
+          {image ? "Change photo" : "Upload photo"}
+        </button>
+        {image && (
+          <button
+            type="button"
+            onClick={() => setImage("")}
+            aria-label="Remove photo"
+            className="rounded-full bg-secondary p-2 text-muted-foreground"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
       <input
-        value={image}
+        value={image.startsWith("data:") ? "" : image}
         onChange={(e) => setImage(e.target.value)}
-        className="mt-1 w-full rounded-2xl bg-secondary px-4 py-3 text-sm outline-none"
-        placeholder="https://…"
+        className="mt-2 w-full rounded-2xl bg-secondary px-4 py-3 text-sm outline-none"
+        placeholder="…or paste an image URL"
       />
+
 
       <label className="mt-4 block text-xs font-medium text-muted-foreground">Move to store</label>
       <div className="mt-2 max-h-44 space-y-2 overflow-y-auto pr-1">
