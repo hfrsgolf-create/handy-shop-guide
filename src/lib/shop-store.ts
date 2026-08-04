@@ -190,7 +190,12 @@ export const useShop = create<State>((set, get) => ({
       ...(patch.image !== undefined ? { image: patch.image || undefined } : {}),
     };
     set({ items: get().items.map((x) => (x.id === id ? next : x)) });
-    const db: Record<string, unknown> = {};
+    const db: {
+      name?: string;
+      preferred_store?: string;
+      is_locked?: boolean;
+      image_url?: string | null;
+    } = {};
     if (patch.name !== undefined) db.name = patch.name;
     if (patch.preferredStore !== undefined) db.preferred_store = patch.preferredStore;
     if (patch.isLocked !== undefined) db.is_locked = patch.isLocked;
