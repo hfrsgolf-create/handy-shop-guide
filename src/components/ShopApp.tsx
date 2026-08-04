@@ -202,8 +202,8 @@ function HomeScreen({ go }: { go: (s: Screen) => void }) {
     },
     {
       id: "favouritesByShop",
-      title: "View favourites by shop",
-      sub: "Browse saved items grouped by store",
+      title: "View & Manage Favourites",
+      sub: "Organise favourites and add them to your list",
       icon: StoreIcon,
       cardBg: "bg-[#fdeadf]",
       iconBg: "bg-[#e07a4a]/20",
@@ -740,7 +740,7 @@ function FavouritesScreen({
         onClick={() => go({ name: "favouritesByShop" })}
         className="mt-4 mb-6 flex w-full items-center justify-center gap-2 rounded-full bg-secondary py-3 text-sm font-medium"
       >
-        View favourites by shop
+        View & manage favourites
         <ChevronRight className="h-4 w-4" />
       </button>
 
@@ -858,127 +858,288 @@ function SelectStoreScreen({
   );
 }
 
-/* ---------- FAVOURITES BY SHOP ---------- */
+/* ---------- VIEW & MANAGE FAVOURITES ---------- */
 
-/** Main high-street shops always offered as tabs, regardless of saved data. */
-const MAIN_SHOP_TABS: { id: string; name: string }[] = [
-  { id: "sainsburys", name: "Sainsbury's" },
-  { id: "tesco", name: "Tesco" },
-  { id: "aldi", name: "Aldi" },
-  { id: "lidl", name: "Lidl" },
-  { id: "costco", name: "Costco" },
-  { id: "marksandspencer", name: "M&S" },
-  { id: "coop", name: "Co-op" },
-  { id: "asda", name: "Asda" },
-  { id: "waitrose", name: "Waitrose" },
-];
+/** Strict display order for the default shops. */
+const DEFAULT_SHOP_ORDER = ["tesco", "sainsburys", "lidl", "aldi"];
+
+type FavSection = { id: StoreId; name: string; color?: string };
 
 function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
   const shops = useGuaranteedShops();
   const items = useShop((s) => s.items);
   const addFavouriteToList = useShop((s) => s.addFavouriteToList);
   const favs = favouriteItems(items);
-  const [selected, setSelected] = useState<StoreId | null>(null);
+  const [editing, setEditing] = useState<Item | null>(null);
+  const [justAdded, setJustAdded] = useState<string | null>(null);
+
   const onList = useMemo(
     () => new Set(listItems(items).filter((i) => !i.checked).map((i) => i.name.toLowerCase())),
     [items],
   );
 
-  // Tabs render immediately: built-in main shops + any user-created shops + "Any store".
-  const tabs = useMemo(() => {
-    const list: { id: StoreId; name: string; color?: string }[] = MAIN_SHOP_TABS.map((s) => ({ ...s }));
-    const seen = new Set(list.map((s) => s.id));
-    shops.forEach((sh) => {
-      if (seen.has(sh.id)) return;
-      seen.add(sh.id);
-      list.push({ id: sh.id, name: sh.name, color: sh.color });
-    });
-    list.push({ id: "any", name: "Any store" });
-    return list;
+  // Any Store first, then the 4 defaults in strict order, then user-created shops.
+  const sections = useMemo<FavSection[]>(() => {
+    const defaults = DEFAULT_SHOP_ORDER
+      .map((id) => shops.find((sh) => sh.id === id))
+      .filter(Boolean)
+      .map((sh) => ({ id: sh!.id, name: sh!.name, color: sh!.color }));
+    const extras = shops
+      .filter((sh) => !DEFAULT_SHOP_ORDER.includes(sh.id))
+      .map((sh) => ({ id: sh.id, name: sh.name, color: sh.color }));
+    return [{ id: "any" as StoreId, name: "Any Store" }, ...defaults, ...extras];
   }, [shops]);
-
-  const shopFavs = selected ? favs.filter((f) => f.preferredStore === selected) : [];
 
   const add = async (f: Item) => {
     if (onList.has(f.name.toLowerCase())) {
       toast(`${f.name} is already on your list`);
       return;
     }
+    setJustAdded(f.id);
     await addFavouriteToList(f.id);
     toast.success("Added to shopping list");
+    setTimeout(() => setJustAdded((v) => (v === f.id ? null : v)), 900);
   };
 
   return (
     <div className="px-6 pt-14">
       <BackHeader go={go} />
-      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Favourites by shop</h1>
+      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">View &amp; manage favourites</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Pick a shop to see its favourites and add them in one tap.
+        Tap <span className="font-medium text-foreground">+</span> to add to your shopping list, or tap an item to edit it.
       </p>
 
-      <div className="mt-6 space-y-3 pb-6">
-        {tabs.map((t) => {
-          const isSel = selected === t.id;
-          const count = favs.filter((f) => f.preferredStore === t.id).length;
+      <div className="mt-7 space-y-8 pb-10">
+        {sections.map((sec) => {
+          const list = favs.filter((f) => f.preferredStore === sec.id);
           return (
-            <div key={t.id}>
-              <StoreTab
-                id={t.id === "any" ? null : t.id}
-                name={t.name}
-                color={t.color ?? null}
-                selected={isSel}
-                onClick={() => setSelected(isSel ? null : t.id)}
-              />
-              {isSel && (
-                <div className="mt-2 space-y-2 pl-1">
-                  {shopFavs.length === 0 ? (
-                    <div className="rounded-2xl bg-card border border-border px-4 py-6 text-center text-sm text-muted-foreground">
-                      No favourites yet for this shop.{" "}
-                      <button
-                        onClick={() => go({ name: "favourites" })}
-                        className="font-medium text-primary"
-                      >
-                        Add favourites
-                      </button>
-                    </div>
-                  ) : (
-                    shopFavs.map((f) => {
-                      const already = onList.has(f.name.toLowerCase());
-                      return (
-                        <div
-                          key={f.id}
-                          className="flex items-center gap-3 rounded-2xl bg-card border border-border px-4 py-3.5"
-                        >
-                          <Star className="h-4 w-4 shrink-0 fill-favorite text-favorite" />
-                          <p className="min-w-0 flex-1 truncate font-medium">
-                            {f.name} {f.isLocked && <span className="text-xs">🔒</span>}
-                          </p>
-                          <button
-                            onClick={() => add(f)}
-                            disabled={already}
-                            aria-label={`Add ${f.name} to shopping list`}
-                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
-                              already
-                                ? "bg-secondary text-muted-foreground"
-                                : "bg-primary text-primary-foreground"
-                            }`}
-                          >
-                            {already ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                          </button>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              )}
-              {!isSel && count > 0 && (
-                <p className="mt-1 pl-4 text-[11px] text-muted-foreground">{count} favourite{count === 1 ? "" : "s"}</p>
-              )}
-            </div>
+            <section key={sec.id}>
+              <div className="flex items-center gap-3">
+                {sec.id === "any" ? (
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-[13px]">
+                    🌍
+                  </div>
+                ) : (
+                  <StoreLogo id={sec.id} name={sec.name} color={sec.color} size={32} round />
+                )}
+                <h2 className="flex-1 text-[15px] font-semibold tracking-tight">{sec.name}</h2>
+                <span className="text-xs text-muted-foreground">
+                  {list.length} {list.length === 1 ? "item" : "items"}
+                </span>
+              </div>
+
+              <div className="mt-3 space-y-2">
+                {list.length === 0 ? (
+                  <p className="rounded-2xl bg-secondary/60 px-4 py-4 text-center text-[13px] text-muted-foreground">
+                    Nothing saved here yet.
+                  </p>
+                ) : (
+                  list.map((f) => (
+                    <FavManageRow
+                      key={f.id}
+                      item={f}
+                      already={onList.has(f.name.toLowerCase())}
+                      flash={justAdded === f.id}
+                      onAdd={() => add(f)}
+                      onEdit={() => setEditing(f)}
+                    />
+                  ))
+                )}
+              </div>
+            </section>
           );
         })}
       </div>
+
+      {editing && (
+        <FavEditSheet
+          item={editing}
+          sections={sections}
+          onClose={() => setEditing(null)}
+        />
+      )}
     </div>
+  );
+}
+
+function FavManageRow({
+  item,
+  already,
+  flash,
+  onAdd,
+  onEdit,
+}: {
+  item: Item;
+  already: boolean;
+  flash: boolean;
+  onAdd: () => void;
+  onEdit: () => void;
+}) {
+  return (
+    <div
+      className={`flex items-center gap-3 rounded-2xl border px-3 py-3 transition ${
+        flash ? "border-primary/50 bg-accent" : "border-border bg-card"
+      }`}
+    >
+      <button
+        onClick={onAdd}
+        disabled={already}
+        aria-label={`Add ${item.name} to shopping list`}
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-90 ${
+          already ? "bg-secondary text-muted-foreground" : "bg-primary text-primary-foreground"
+        }`}
+      >
+        {already || flash ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+      </button>
+
+      <button onClick={onEdit} className="flex min-w-0 flex-1 items-center gap-3 py-1 text-left">
+        {item.image && (
+          <img
+            src={item.image}
+            alt={item.name}
+            loading="lazy"
+            className="h-9 w-9 shrink-0 rounded-xl object-cover"
+          />
+        )}
+        <span className="min-w-0 flex-1 truncate text-[15px] font-medium">{item.name}</span>
+        {item.isLocked && item.preferredStore !== "any" && (
+          <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        )}
+        <Pencil className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+      </button>
+    </div>
+  );
+}
+
+function FavEditSheet({
+  item,
+  sections,
+  onClose,
+}: {
+  item: Item;
+  sections: FavSection[];
+  onClose: () => void;
+}) {
+  const updateItem = useShop((s) => s.updateItem);
+  const removeFavourite = useShop((s) => s.removeFavourite);
+  const [name, setName] = useState(item.name);
+  const [store, setStore] = useState<StoreId>(item.preferredStore);
+  const [image, setImage] = useState(item.image ?? "");
+  const [locked, setLocked] = useState(item.isLocked);
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      await updateItem(item.id, {
+        name: name.trim(),
+        preferredStore: store,
+        isLocked: store === "any" ? false : locked,
+        image: image.trim() || null,
+      });
+      toast.success("Favourite updated");
+      onClose();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't save changes");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <ModalShell onClose={onClose}>
+      <h3 className="text-lg font-semibold">Edit favourite</h3>
+
+      <label className="mt-4 block text-xs font-medium text-muted-foreground">Item name</label>
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className="mt-1 w-full rounded-2xl bg-secondary px-4 py-3 text-sm outline-none"
+        placeholder="Item name"
+      />
+
+      <label className="mt-4 block text-xs font-medium text-muted-foreground">Image URL (optional)</label>
+      <input
+        value={image}
+        onChange={(e) => setImage(e.target.value)}
+        className="mt-1 w-full rounded-2xl bg-secondary px-4 py-3 text-sm outline-none"
+        placeholder="https://…"
+      />
+
+      <label className="mt-4 block text-xs font-medium text-muted-foreground">Move to store</label>
+      <div className="mt-2 max-h-44 space-y-2 overflow-y-auto pr-1">
+        {sections.map((sec) => (
+          <button
+            key={sec.id}
+            onClick={() => setStore(sec.id)}
+            className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2.5 text-left text-sm ${
+              store === sec.id ? "border-primary/50 bg-accent font-semibold" : "border-border bg-card"
+            }`}
+          >
+            {sec.id === "any" ? (
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-xs">🌍</span>
+            ) : (
+              <StoreLogo id={sec.id} name={sec.name} color={sec.color} size={28} round />
+            )}
+            <span className="min-w-0 flex-1 truncate">{sec.name}</span>
+            {store === sec.id && <Check className="h-4 w-4 text-primary" />}
+          </button>
+        ))}
+      </div>
+
+      {store !== "any" && (
+        <button
+          type="button"
+          onClick={() => setLocked((v) => !v)}
+          className={`mt-4 flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left ${
+            locked ? "border-primary/40 bg-accent" : "border-transparent bg-secondary"
+          }`}
+        >
+          <span className={`flex items-center gap-2 text-sm ${locked ? "font-semibold text-primary" : "font-medium"}`}>
+            {locked && <Lock className="h-3.5 w-3.5" />}
+            Lock to store
+          </span>
+          <span
+            role="switch"
+            aria-checked={locked}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
+              locked ? "bg-primary" : "bg-border"
+            }`}
+          >
+            <span
+              className={`inline-block h-5 w-5 transform rounded-full bg-background shadow transition ${
+                locked ? "translate-x-5" : "translate-x-0.5"
+              }`}
+            />
+          </span>
+        </button>
+      )}
+
+      <div className="mt-5 flex gap-2">
+        <button
+          onClick={() => {
+            removeFavourite(item.id);
+            toast.success("Favourite deleted");
+            onClose();
+          }}
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-destructive"
+          aria-label="Delete favourite"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+        <button onClick={onClose} className="flex-1 rounded-full bg-secondary py-3 text-sm font-medium">
+          Cancel
+        </button>
+        <button
+          onClick={save}
+          disabled={saving || !name.trim()}
+          className="flex-1 rounded-full bg-primary py-3 text-sm font-medium text-primary-foreground disabled:opacity-40"
+        >
+          {saving ? "Saving…" : "Save"}
+        </button>
+      </div>
+    </ModalShell>
   );
 }
 
@@ -994,7 +1155,7 @@ function StoreFavouritesScreen({ storeId, go }: { storeId: StoreId; go: (s: Scre
 
   return (
     <div className="px-6 pt-14">
-      <BackHeader go={go} to={{ name: "favouritesByShop" }} label="Favourites by shop" />
+      <BackHeader go={go} to={{ name: "favouritesByShop" }} label="Favourites" />
       <h1 className="mt-3 text-[28px] font-semibold tracking-tight">{title}</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         {list.length} {list.length === 1 ? "item" : "items"}
