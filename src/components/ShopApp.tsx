@@ -920,7 +920,7 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
                     🌍
                   </div>
                 ) : (
-                  <StoreLogo id={sec.id} name={sec.name} color={sec.color} size={32} round />
+                  <StoreLogo storeId={sec.id} storeName={sec.name} color={sec.color} size={32} radius="50%" />
                 )}
                 <h2 className="flex-1 text-[15px] font-semibold tracking-tight">{sec.name}</h2>
                 <span className="text-xs text-muted-foreground">
@@ -1080,7 +1080,7 @@ function FavEditSheet({
             {sec.id === "any" ? (
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-xs">🌍</span>
             ) : (
-              <StoreLogo id={sec.id} name={sec.name} color={sec.color} size={28} round />
+              <StoreLogo storeId={sec.id} storeName={sec.name} color={sec.color} size={28} radius="50%" />
             )}
             <span className="min-w-0 flex-1 truncate">{sec.name}</span>
             {store === sec.id && <Check className="h-4 w-4 text-primary" />}
