@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X, Camera, ScanLine, Loader2, Check } from "lucide-react";
+import { ProductImageBox } from "@/components/ProductImageBox";
 import {
-  fileToSmallDataUrl,
   getBarcodeDetector,
   isScanSupported,
   lookupBarcode,
   type ScannedProduct,
 } from "@/lib/barcode-scan";
+
 
 export type ScanResult = { brand: string; product: string; image: string; barcode: string };
 
@@ -24,7 +25,6 @@ export function ScanProductSheet({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);
-  const fileRef = useRef<HTMLInputElement | null>(null);
 
   const supported = isScanSupported();
   const [mode, setMode] = useState<"camera" | "manual" | "result">(supported ? "camera" : "manual");
@@ -114,14 +114,6 @@ export function ScanProductSheet({
 
   useEffect(() => stopCamera, [stopCamera]);
 
-  const pickImage = async (file?: File | null) => {
-    if (!file) return;
-    try {
-      setImage(await fileToSmallDataUrl(file));
-    } catch {
-      /* ignore unreadable files */
-    }
-  };
 
   const close = () => {
     stopCamera();
@@ -220,24 +212,12 @@ export function ScanProductSheet({
               </p>
             )}
 
-            <div className="flex items-center gap-3 rounded-2xl bg-secondary p-3">
-              {image ? (
-                <img
-                  src={image}
-                  alt={product || "Product"}
-                  loading="lazy"
-                  className="h-14 w-14 shrink-0 rounded-xl object-cover"
-                />
-              ) : (
-                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-card text-muted-foreground">
-                  <Camera className="h-5 w-5" />
-                </span>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">{product || "Unnamed product"}</p>
-                <p className="truncate text-xs text-muted-foreground">{brand || barcode || "No brand"}</p>
-              </div>
-            </div>
+            <ProductImageBox
+              image={image}
+              loading={looking}
+              alt={product || "Product"}
+              onCapture={(url) => setImage(url)}
+            />
 
             <div>
               <label className="block text-xs font-medium text-muted-foreground">Brand</label>
@@ -252,25 +232,16 @@ export function ScanProductSheet({
               <label className="block text-xs font-medium text-muted-foreground">Product</label>
               <input
                 value={product}
+                autoFocus
+                onFocus={(e) => {
+                  const end = e.currentTarget.value.length;
+                  e.currentTarget.setSelectionRange(end, end);
+                }}
                 onChange={(e) => setProduct(e.target.value)}
                 placeholder="e.g. Baked Beans"
                 className="mt-1 w-full rounded-2xl bg-secondary px-4 py-3 text-sm outline-none"
               />
             </div>
-
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => void pickImage(e.target.files?.[0])}
-            />
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="w-full rounded-full bg-secondary py-3 text-sm font-medium"
-            >
-              {image ? "Change photo" : "Upload photo (optional)"}
-            </button>
 
             <button
               onClick={() =>
@@ -284,6 +255,7 @@ export function ScanProductSheet({
             </button>
           </div>
         )}
+
       </div>
     </div>
   );

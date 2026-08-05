@@ -20,7 +20,6 @@ import {
   ArrowDown,
   Trash2,
   ScanLine,
-  Image as ImageIcon,
 } from "lucide-react";
 import {
   useShop,
@@ -37,8 +36,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Pencil, Sparkles } from "lucide-react";
 import { StoreLogo, StoreTab, StoreCard, brandColor } from "@/lib/store-logos";
 import { ITEM_CATALOGUE } from "@/lib/item-catalogue";
-import { fileToSmallDataUrl } from "@/lib/barcode-scan";
 import { ScanProductSheet } from "@/components/ScanProductSheet";
+import { ProductImageBox } from "@/components/ProductImageBox";
 
 type Screen =
   | { name: "home" }
@@ -671,7 +670,6 @@ function FavouritesScreen({
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [storeHint, setStoreHint] = useState(false);
-  const uploadRef = useRef<HTMLInputElement | null>(null);
 
   const selectedShop = shops.find((s) => s.id === store);
 
@@ -711,16 +709,6 @@ function FavouritesScreen({
       return;
     }
     setLockPrompt(true);
-  };
-
-  const uploadImage = async (file?: File | null) => {
-    if (!file) return;
-    try {
-      const url = await fileToSmallDataUrl(file);
-      setDraft((d) => ({ ...d, image: url }));
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't read that image");
-    }
   };
 
   const canSubmit = (brand.trim() + product.trim()).length > 0;
@@ -837,48 +825,13 @@ function FavouritesScreen({
           />
         </div>
 
-        {/* Product image (from scan or upload) */}
-        <div className="flex items-center gap-3 rounded-2xl bg-secondary p-3">
-          {image ? (
-            <img
-              src={image}
-              alt={product || "Product"}
-              loading="lazy"
-              className="h-12 w-12 shrink-0 rounded-xl object-cover"
-            />
-          ) : (
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-card text-muted-foreground">
-              <ImageIcon className="h-4 w-4" />
-            </span>
-          )}
-          <span className="min-w-0 flex-1 text-xs text-muted-foreground">
-            {image ? "Photo attached" : "No photo yet — scan or upload one"}
-          </span>
-          <input
-            ref={uploadRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => void uploadImage(e.target.files?.[0])}
-          />
-          <button
-            type="button"
-            onClick={() => uploadRef.current?.click()}
-            className="shrink-0 rounded-full bg-card px-3 py-2 text-xs font-medium"
-          >
-            {image ? "Change" : "Upload"}
-          </button>
-          {image && (
-            <button
-              type="button"
-              onClick={() => setDraft((d) => ({ ...d, image: "" }))}
-              aria-label="Remove photo"
-              className="shrink-0 rounded-full bg-card p-2 text-muted-foreground"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
+        {/* Product image — scanned, or tap to take a photo */}
+        <ProductImageBox
+          image={image}
+          alt={product || "Product"}
+          onCapture={(url) => setDraft((d) => ({ ...d, image: url }))}
+        />
+
 
 
 
@@ -1207,7 +1160,6 @@ function FavEditSheet({
   const [name, setName] = useState(item.name);
   const [store, setStore] = useState<StoreId>(item.preferredStore);
   const [image, setImage] = useState(item.image ?? "");
-  const editUploadRef = useRef<HTMLInputElement | null>(null);
   const [locked, setLocked] = useState(item.isLocked);
   const [saving, setSaving] = useState(false);
 
@@ -1242,54 +1194,11 @@ function FavEditSheet({
         placeholder="Item name"
       />
 
-      <label className="mt-4 block text-xs font-medium text-muted-foreground">Photo (optional)</label>
-      <div className="mt-1 flex items-center gap-3">
-        {image ? (
-          <img src={image} alt="" loading="lazy" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
-        ) : (
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
-            <ImageIcon className="h-4 w-4" />
-          </span>
-        )}
-        <input
-          ref={editUploadRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={async (e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            try {
-              setImage(await fileToSmallDataUrl(file));
-            } catch {
-              toast.error("Couldn't read that image");
-            }
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => editUploadRef.current?.click()}
-          className="rounded-full bg-secondary px-4 py-2 text-xs font-medium"
-        >
-          {image ? "Change photo" : "Upload photo"}
-        </button>
-        {image && (
-          <button
-            type="button"
-            onClick={() => setImage("")}
-            aria-label="Remove photo"
-            className="rounded-full bg-secondary p-2 text-muted-foreground"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        )}
+      <label className="mt-4 block text-xs font-medium text-muted-foreground">Photo</label>
+      <div className="mt-1">
+        <ProductImageBox image={image} alt={name || "Product"} onCapture={(url) => setImage(url)} />
       </div>
-      <input
-        value={image.startsWith("data:") ? "" : image}
-        onChange={(e) => setImage(e.target.value)}
-        className="mt-2 w-full rounded-2xl bg-secondary px-4 py-3 text-sm outline-none"
-        placeholder="…or paste an image URL"
-      />
+
 
 
       <label className="mt-4 block text-xs font-medium text-muted-foreground">Move to store</label>
