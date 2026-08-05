@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X, Camera, ScanLine, Loader2, Check } from "lucide-react";
+import { ProductImageBox } from "@/components/ProductImageBox";
 import {
   fileToSmallDataUrl,
   getBarcodeDetector,
@@ -7,6 +8,7 @@ import {
   lookupBarcode,
   type ScannedProduct,
 } from "@/lib/barcode-scan";
+
 
 export type ScanResult = { brand: string; product: string; image: string; barcode: string };
 
