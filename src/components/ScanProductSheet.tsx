@@ -116,14 +116,6 @@ export function ScanProductSheet({
 
   useEffect(() => stopCamera, [stopCamera]);
 
-  const pickImage = async (file?: File | null) => {
-    if (!file) return;
-    try {
-      setImage(await fileToSmallDataUrl(file));
-    } catch {
-      /* ignore unreadable files */
-    }
-  };
 
   const close = () => {
     stopCamera();
