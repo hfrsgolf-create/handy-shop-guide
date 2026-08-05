@@ -1928,6 +1928,12 @@ function ShoppingRow({
       >
         {item.name}
       </span>
+
+      {badge && !item.checked && (
+        <span className="shrink-0 rounded-full bg-background/70 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          {badge}
+        </span>
+      )}
     </li>
   );
 }
