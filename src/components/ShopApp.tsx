@@ -1801,29 +1801,8 @@ function MasterListScreen({ go }: { go: (s: Screen) => void; onEditDeal: (it: It
   const remaining = list.filter((i) => !i.checked);
   const checked = list.filter((i) => i.checked);
 
-  const finishShop = async () => {
-    const cleared = checked;
-    if (cleared.length === 0) {
-      toast("Nothing ticked off yet");
-      return;
-    }
-    await clearChecked();
-    toast.success("Shop complete — items cleared", {
-      action: {
-        label: "Undo",
-        onClick: () => {
-          cleared.forEach((it) => {
-            addItem({
-              name: it.name,
-              preferredStore: it.preferredStore,
-              isLocked: it.isLocked,
-              notes: it.notes,
-            });
-          });
-        },
-      },
-    });
-  };
+  const checkout = () => runCheckout(checked, clearChecked, addItem);
+
 
   const asText = () => list.map((it) => `${it.checked ? "✓" : "•"} ${it.name}`).join("\n");
 
