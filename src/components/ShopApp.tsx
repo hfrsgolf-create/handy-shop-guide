@@ -318,6 +318,37 @@ function GoShoppingScreen({ go }: { go: (s: Screen) => void }) {
   );
 }
 
+/* ---------- SHARED CHECKOUT ---------- */
+
+// One completion flow shared by the main shopping list and the per-store view.
+async function runCheckout(
+  checked: Item[],
+  clearChecked: () => Promise<void>,
+  addItem: (i: { name: string; preferredStore: StoreId; isLocked: boolean; notes?: string }) => Promise<void>,
+) {
+  if (checked.length === 0) {
+    toast("Nothing ticked off yet");
+    return;
+  }
+  const cleared = checked;
+  await clearChecked();
+  toast.success("Shop complete — items cleared", {
+    action: {
+      label: "Undo",
+      onClick: () => {
+        cleared.forEach((it) => {
+          addItem({
+            name: it.name,
+            preferredStore: it.preferredStore,
+            isLocked: it.isLocked,
+            notes: it.notes,
+          });
+        });
+      },
+    },
+  });
+}
+
 /* ---------- STORE ---------- */
 
 function StoreScreen({
@@ -331,12 +362,19 @@ function StoreScreen({
 }) {
   const items = useShop((s) => s.items);
   const shops = useShops((s) => s.shops);
+  const toggleCheck = useShop((s) => s.toggleCheck);
+  const clearChecked = useShop((s) => s.clearChecked);
+  const addItem = useShop((s) => s.addItem);
   const store = shops.find((s) => s.id === storeId) ?? { id: storeId, name: storeName(storeId), color: "#94a3b8" };
 
-  const visible = listItems(items).filter((it) => !it.checked).filter((it) => {
+  // Same single list as the main shopping list — just filtered to this store.
+  const visible = listItems(items).filter((it) => {
     if (it.isLocked) return it.preferredStore === storeId;
     return true;
   });
+
+  const remaining = visible.filter((it) => !it.checked);
+  const checked = visible.filter((it) => it.checked);
 
   const preferredHere = visible.filter((it) => it.preferredStore === storeId);
   const dealsHere = visible.filter((it) => {
@@ -348,22 +386,34 @@ function StoreScreen({
 
   const dealsCount = visible.filter((it) => activeDeal(it)?.store === storeId).length;
 
+  const checkout = () => runCheckout(checked, clearChecked, addItem);
+
   return (
     <div className="px-6 pt-14">
       <BackHeader go={go} to={{ name: "goShopping" }} label="Shops" />
-      <div className="mt-3 flex items-center gap-3">
-        <StoreLogo
-          storeId={store.id}
-          storeName={store.name}
-          color={brandColor(store.id, store.name, store.color)}
-          size={54}
-          radius="50%"
-          style={{ background: "#ffffff", boxShadow: "0 1px 2px rgba(16,24,40,0.08)" }}
-        />
-        <div className="min-w-0">
-          <h1 className="text-[28px] font-semibold tracking-tight">{store.name}</h1>
-          <p className="text-sm text-muted-foreground">{visible.length} items available</p>
+      <div className="mt-3 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <StoreLogo
+            storeId={store.id}
+            storeName={store.name}
+            color={brandColor(store.id, store.name, store.color)}
+            size={54}
+            radius="50%"
+            style={{ background: "#ffffff", boxShadow: "0 1px 2px rgba(16,24,40,0.08)" }}
+          />
+          <div className="min-w-0">
+            <h1 className="truncate text-[28px] font-semibold tracking-tight">{store.name}</h1>
+            <p className="text-sm text-muted-foreground">
+              {remaining.length} left · {checked.length} in basket
+            </p>
+          </div>
         </div>
+        <button
+          onClick={checkout}
+          className="mt-1 shrink-0 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition active:scale-[0.97]"
+        >
+          Checkout
+        </button>
       </div>
 
       {dealsCount > 0 && (
@@ -372,15 +422,21 @@ function StoreScreen({
         </div>
       )}
 
-      <StoreSection title="⭐ Preferred here" items={preferredHere} storeId={storeId} onEditDeal={onEditDeal} />
-      <StoreSection title="🔥 Deals in this store" items={dealsHere} storeId={storeId} onEditDeal={onEditDeal} />
-      <StoreSection title="Other available items" items={other} storeId={storeId} onEditDeal={onEditDeal} muted />
+      <StoreSection
+        title="⭐ Preferred here"
+        items={preferredHere}
+        onToggle={toggleCheck}
+        badge="Preferred"
+      />
+      <StoreSection title="🔥 Deals in this store" items={dealsHere} onToggle={toggleCheck} />
+      <StoreSection title="Other available items" items={other} onToggle={toggleCheck} muted soft />
 
       {visible.length === 0 && (
         <div className="mt-8 rounded-3xl bg-card px-5 py-10 text-center text-sm text-muted-foreground">
           Nothing on your list for {store.name}.
         </div>
       )}
+      <div className="h-8" />
     </div>
   );
 }
@@ -388,27 +444,38 @@ function StoreScreen({
 function StoreSection({
   title,
   items,
-  storeId,
-  onEditDeal,
+  onToggle,
   muted,
+  soft,
+  badge,
 }: {
   title: string;
   items: Item[];
-  storeId: Exclude<StoreId, "any">;
-  onEditDeal: (it: Item) => void;
+  onToggle: (id: string) => void;
   muted?: boolean;
+  soft?: boolean;
+  badge?: string;
 }) {
   if (items.length === 0) return null;
+  const remaining = items.filter((i) => !i.checked);
+  const done = items.filter((i) => i.checked);
   return (
     <section className="mt-7">
       <h2 className={`mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] ${muted ? "text-muted-foreground" : "text-foreground"}`}>
         {title}
       </h2>
-      <div className="space-y-2">
-        {items.map((it) => (
-          <ItemRow key={it.id} item={it} viewingStore={storeId} onEditDeal={onEditDeal} />
+      <ul className="overflow-hidden rounded-2xl border border-border">
+        {[...remaining, ...done].map((it, idx) => (
+          <ShoppingRow
+            key={it.id}
+            item={it}
+            onToggle={() => onToggle(it.id)}
+            first={idx === 0}
+            soft={soft}
+            badge={badge}
+          />
         ))}
-      </div>
+      </ul>
     </section>
   );
 }
@@ -1734,29 +1801,8 @@ function MasterListScreen({ go }: { go: (s: Screen) => void; onEditDeal: (it: It
   const remaining = list.filter((i) => !i.checked);
   const checked = list.filter((i) => i.checked);
 
-  const finishShop = async () => {
-    const cleared = checked;
-    if (cleared.length === 0) {
-      toast("Nothing ticked off yet");
-      return;
-    }
-    await clearChecked();
-    toast.success("Shop complete — items cleared", {
-      action: {
-        label: "Undo",
-        onClick: () => {
-          cleared.forEach((it) => {
-            addItem({
-              name: it.name,
-              preferredStore: it.preferredStore,
-              isLocked: it.isLocked,
-              notes: it.notes,
-            });
-          });
-        },
-      },
-    });
-  };
+  const checkout = () => runCheckout(checked, clearChecked, addItem);
+
 
   const asText = () => list.map((it) => `${it.checked ? "✓" : "•"} ${it.name}`).join("\n");
 
@@ -1799,10 +1845,10 @@ function MasterListScreen({ go }: { go: (s: Screen) => void; onEditDeal: (it: It
           </p>
         </div>
         <button
-          onClick={finishShop}
+          onClick={checkout}
           className="mt-1 shrink-0 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition active:scale-[0.97]"
         >
-          Finish shop
+          Checkout
         </button>
       </div>
 
@@ -1847,17 +1893,22 @@ function ShoppingRow({
   item,
   onToggle,
   first,
+  soft,
+  badge,
 }: {
   item: Item;
   onToggle: () => void;
   first: boolean;
+  soft?: boolean;
+  badge?: string;
 }) {
   const image = (item as Item & { image?: string }).image;
+  const unchecked = soft ? "bg-[#fdf5f5]" : "bg-[#fdeeee]";
   return (
     <li
       className={`flex items-center gap-3 px-4 py-3 transition-colors duration-300 ${
         first ? "" : "border-t border-border/60"
-      } ${item.checked ? "bg-[#eaf6ec] opacity-70" : "bg-[#fdeeee]"}`}
+      } ${item.checked ? "bg-[#eaf6ec] opacity-70" : unchecked}`}
     >
       <button
         onClick={onToggle}
@@ -1887,6 +1938,12 @@ function ShoppingRow({
       >
         {item.name}
       </span>
+
+      {badge && !item.checked && (
+        <span className="shrink-0 rounded-full bg-background/70 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          {badge}
+        </span>
+      )}
     </li>
   );
 }
