@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { X, Camera, ScanLine, Loader2, Check } from "lucide-react";
 import { ProductImageBox } from "@/components/ProductImageBox";
 import {
-  fileToSmallDataUrl,
   getBarcodeDetector,
   isScanSupported,
   lookupBarcode,
@@ -26,7 +25,6 @@ export function ScanProductSheet({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);
-  const fileRef = useRef<HTMLInputElement | null>(null);
 
   const supported = isScanSupported();
   const [mode, setMode] = useState<"camera" | "manual" | "result">(supported ? "camera" : "manual");
