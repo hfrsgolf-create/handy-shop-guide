@@ -37,8 +37,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Pencil, Sparkles } from "lucide-react";
 import { StoreLogo, StoreTab, StoreCard, brandColor } from "@/lib/store-logos";
 import { ITEM_CATALOGUE } from "@/lib/item-catalogue";
-import { fileToSmallDataUrl } from "@/lib/barcode-scan";
 import { ScanProductSheet } from "@/components/ScanProductSheet";
+import { ProductImageBox } from "@/components/ProductImageBox";
 
 type Screen =
   | { name: "home" }
@@ -671,7 +671,6 @@ function FavouritesScreen({
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [storeHint, setStoreHint] = useState(false);
-  const uploadRef = useRef<HTMLInputElement | null>(null);
 
   const selectedShop = shops.find((s) => s.id === store);
 
@@ -711,16 +710,6 @@ function FavouritesScreen({
       return;
     }
     setLockPrompt(true);
-  };
-
-  const uploadImage = async (file?: File | null) => {
-    if (!file) return;
-    try {
-      const url = await fileToSmallDataUrl(file);
-      setDraft((d) => ({ ...d, image: url }));
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't read that image");
-    }
   };
 
   const canSubmit = (brand.trim() + product.trim()).length > 0;
@@ -1172,7 +1161,6 @@ function FavEditSheet({
   const [name, setName] = useState(item.name);
   const [store, setStore] = useState<StoreId>(item.preferredStore);
   const [image, setImage] = useState(item.image ?? "");
-  const editUploadRef = useRef<HTMLInputElement | null>(null);
   const [locked, setLocked] = useState(item.isLocked);
   const [saving, setSaving] = useState(false);
 
