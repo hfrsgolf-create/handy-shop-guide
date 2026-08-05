@@ -318,6 +318,37 @@ function GoShoppingScreen({ go }: { go: (s: Screen) => void }) {
   );
 }
 
+/* ---------- SHARED CHECKOUT ---------- */
+
+// One completion flow shared by the main shopping list and the per-store view.
+async function runCheckout(
+  checked: Item[],
+  clearChecked: () => Promise<void>,
+  addItem: (i: { name: string; preferredStore: StoreId; isLocked: boolean; notes?: string }) => Promise<void>,
+) {
+  if (checked.length === 0) {
+    toast("Nothing ticked off yet");
+    return;
+  }
+  const cleared = checked;
+  await clearChecked();
+  toast.success("Shop complete — items cleared", {
+    action: {
+      label: "Undo",
+      onClick: () => {
+        cleared.forEach((it) => {
+          addItem({
+            name: it.name,
+            preferredStore: it.preferredStore,
+            isLocked: it.isLocked,
+            notes: it.notes,
+          });
+        });
+      },
+    },
+  });
+}
+
 /* ---------- STORE ---------- */
 
 function StoreScreen({
