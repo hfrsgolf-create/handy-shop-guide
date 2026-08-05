@@ -837,48 +837,13 @@ function FavouritesScreen({
           />
         </div>
 
-        {/* Product image (from scan or upload) */}
-        <div className="flex items-center gap-3 rounded-2xl bg-secondary p-3">
-          {image ? (
-            <img
-              src={image}
-              alt={product || "Product"}
-              loading="lazy"
-              className="h-12 w-12 shrink-0 rounded-xl object-cover"
-            />
-          ) : (
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-card text-muted-foreground">
-              <ImageIcon className="h-4 w-4" />
-            </span>
-          )}
-          <span className="min-w-0 flex-1 text-xs text-muted-foreground">
-            {image ? "Photo attached" : "No photo yet — scan or upload one"}
-          </span>
-          <input
-            ref={uploadRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => void uploadImage(e.target.files?.[0])}
-          />
-          <button
-            type="button"
-            onClick={() => uploadRef.current?.click()}
-            className="shrink-0 rounded-full bg-card px-3 py-2 text-xs font-medium"
-          >
-            {image ? "Change" : "Upload"}
-          </button>
-          {image && (
-            <button
-              type="button"
-              onClick={() => setDraft((d) => ({ ...d, image: "" }))}
-              aria-label="Remove photo"
-              className="shrink-0 rounded-full bg-card p-2 text-muted-foreground"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
+        {/* Product image — scanned, or tap to take a photo */}
+        <ProductImageBox
+          image={image}
+          alt={product || "Product"}
+          onCapture={(url) => setDraft((d) => ({ ...d, image: url }))}
+        />
+
 
 
 
