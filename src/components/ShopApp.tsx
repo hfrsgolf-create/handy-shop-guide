@@ -1845,10 +1845,10 @@ function MasterListScreen({ go }: { go: (s: Screen) => void; onEditDeal: (it: It
           </p>
         </div>
         <button
-          onClick={finishShop}
+          onClick={checkout}
           className="mt-1 shrink-0 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition active:scale-[0.97]"
         >
-          Finish shop
+          Checkout
         </button>
       </div>
 
