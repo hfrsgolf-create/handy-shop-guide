@@ -20,7 +20,6 @@ import {
   ArrowDown,
   Trash2,
   ScanLine,
-  Image as ImageIcon,
 } from "lucide-react";
 import {
   useShop,
