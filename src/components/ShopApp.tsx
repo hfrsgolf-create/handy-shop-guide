@@ -1828,23 +1828,21 @@ function MasterListScreen({ go }: { go: (s: Screen) => void; onEditDeal: (it: It
 function ShoppingRow({
   item,
   onToggle,
-  first,
   soft,
   badge,
 }: {
   item: Item;
   onToggle: () => void;
-  first: boolean;
   soft?: boolean;
   badge?: string;
 }) {
   const image = (item as Item & { image?: string }).image;
-  const unchecked = soft ? "bg-[#fdf5f5]" : "bg-[#fdeeee]";
+  const uncheckedBg = soft ? "bg-[#fdf5f5]" : "bg-[#fdeeee]";
   return (
     <li
-      className={`flex items-center gap-3 px-4 py-3 transition-colors duration-300 ${
-        first ? "" : "border-t border-border/60"
-      } ${item.checked ? "bg-[#eaf6ec] opacity-70" : unchecked}`}
+      className={`flex items-center gap-3 rounded-2xl border border-white/60 px-4 py-3 shadow-card transition-all duration-300 ${
+        item.checked ? "bg-[#eaf6ec] opacity-70" : uncheckedBg
+      }`}
     >
       <button
         onClick={onToggle}
