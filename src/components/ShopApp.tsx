@@ -463,13 +463,12 @@ function StoreSection({
       <h2 className={`mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] ${muted ? "text-muted-foreground" : "text-foreground"}`}>
         {title}
       </h2>
-      <ul className="overflow-hidden rounded-2xl border border-border">
-        {[...remaining, ...done].map((it, idx) => (
+      <ul className="space-y-2.5">
+        {[...remaining, ...done].map((it) => (
           <ShoppingRow
             key={it.id}
             item={it}
             onToggle={() => onToggle(it.id)}
-            first={idx === 0}
             soft={soft}
             badge={badge}
           />
@@ -1815,9 +1814,9 @@ function MasterListScreen({ go }: { go: (s: Screen) => void; onEditDeal: (it: It
           </button>
         </div>
       ) : (
-        <ul className="mt-6 overflow-hidden rounded-2xl border border-border pb-0">
-          {[...remaining, ...checked].map((it, idx) => (
-            <ShoppingRow key={it.id} item={it} onToggle={() => toggleCheck(it.id)} first={idx === 0} />
+        <ul className="mt-6 space-y-2.5">
+          {[...remaining, ...checked].map((it) => (
+            <ShoppingRow key={it.id} item={it} onToggle={() => toggleCheck(it.id)} />
           ))}
         </ul>
       )}
