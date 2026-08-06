@@ -463,13 +463,12 @@ function StoreSection({
       <h2 className={`mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.12em] ${muted ? "text-muted-foreground" : "text-foreground"}`}>
         {title}
       </h2>
-      <ul className="overflow-hidden rounded-2xl border border-border">
-        {[...remaining, ...done].map((it, idx) => (
+      <ul className="space-y-2.5">
+        {[...remaining, ...done].map((it) => (
           <ShoppingRow
             key={it.id}
             item={it}
             onToggle={() => onToggle(it.id)}
-            first={idx === 0}
             soft={soft}
             badge={badge}
           />
@@ -1815,9 +1814,9 @@ function MasterListScreen({ go }: { go: (s: Screen) => void; onEditDeal: (it: It
           </button>
         </div>
       ) : (
-        <ul className="mt-6 overflow-hidden rounded-2xl border border-border pb-0">
-          {[...remaining, ...checked].map((it, idx) => (
-            <ShoppingRow key={it.id} item={it} onToggle={() => toggleCheck(it.id)} first={idx === 0} />
+        <ul className="mt-6 space-y-2.5">
+          {[...remaining, ...checked].map((it) => (
+            <ShoppingRow key={it.id} item={it} onToggle={() => toggleCheck(it.id)} />
           ))}
         </ul>
       )}
@@ -1829,23 +1828,21 @@ function MasterListScreen({ go }: { go: (s: Screen) => void; onEditDeal: (it: It
 function ShoppingRow({
   item,
   onToggle,
-  first,
   soft,
   badge,
 }: {
   item: Item;
   onToggle: () => void;
-  first: boolean;
   soft?: boolean;
   badge?: string;
 }) {
   const image = (item as Item & { image?: string }).image;
-  const unchecked = soft ? "bg-[#fdf5f5]" : "bg-[#fdeeee]";
+  const uncheckedBg = soft ? "bg-[#fdf5f5]" : "bg-[#fdeeee]";
   return (
     <li
-      className={`flex items-center gap-3 px-4 py-3 transition-colors duration-300 ${
-        first ? "" : "border-t border-border/60"
-      } ${item.checked ? "bg-[#eaf6ec] opacity-70" : unchecked}`}
+      className={`flex items-center gap-3 rounded-2xl border border-white/60 px-4 py-3 shadow-card transition-all duration-300 ${
+        item.checked ? "bg-[#eaf6ec] opacity-70" : uncheckedBg
+      }`}
     >
       <button
         onClick={onToggle}
