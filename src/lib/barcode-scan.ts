@@ -76,27 +76,45 @@ export async function lookupBarcode(barcode: string): Promise<ScannedProduct> {
  * Reads a picked file and returns a small, square-ish JPEG data URL.
  * Keeps stored images tiny so lists stay fast.
  */
-export function fileToSmallDataUrl(file: File, max = 200): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error("Couldn't read that image"));
-    reader.onload = () => {
-      const img = new Image();
-      img.onerror = () => reject(new Error("Couldn't read that image"));
-      img.onload = () => {
-        const scale = Math.min(1, max / Math.max(img.width, img.height));
-        const w = Math.max(1, Math.round(img.width * scale));
-        const h = Math.max(1, Math.round(img.height * scale));
-        const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return reject(new Error("Couldn't process that image"));
-        ctx.drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL("image/jpeg", 0.75));
-      };
-      img.src = String(reader.result);
-    };
-    reader.readAsDataURL(file);
-  });
+function drawToDataUrl(src: CanvasImageSource, w0: number, h0: number, max: number): string {
+  const scale = Math.min(1, max / Math.max(w0, h0));
+  const w = Math.max(1, Math.round(w0 * scale));
+  const h = Math.max(1, Math.round(h0 * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Couldn't process that image");
+  ctx.drawImage(src, 0, 0, w, h);
+  return canvas.toDataURL("image/jpeg", 0.75);
+}
+
+/**
+ * Reads a picked/captured file and returns a small square-ish JPEG data URL.
+ * Tries an <img> decode first, then createImageBitmap (handles HEIC/large camera
+ * captures on some devices). Throws when nothing can be decoded.
+ */
+export async function fileToSmallDataUrl(file: File, max = 200): Promise<string> {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error("decode failed"));
+      el.src = objectUrl;
+    });
+    return drawToDataUrl(img, img.naturalWidth || img.width, img.naturalHeight || img.height, max);
+  } catch {
+    if (typeof createImageBitmap === "function") {
+      const bmp = await createImageBitmap(file);
+      try {
+        return drawToDataUrl(bmp, bmp.width, bmp.height, max);
+      } finally {
+        bmp.close?.();
+      }
+    }
+    throw new Error("Couldn't read that image");
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
 }
