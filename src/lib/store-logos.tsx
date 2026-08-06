@@ -53,9 +53,12 @@ export function brandColor(
   name: string | null | undefined,
   saved?: string | null,
 ): string {
+  // A saved colour is always the user's explicit choice — it wins so colour
+  // edits show up immediately everywhere the shop is rendered.
+  if (saved) return saved;
   const key = getStoreKey(id) ?? getStoreKey(name);
   if (key && storeColors[key]) return storeColors[key];
-  return saved || DEFAULT_SHOP_COLOR;
+  return DEFAULT_SHOP_COLOR;
 }
 
 /** rgba() tint from a hex colour. */

@@ -1405,6 +1405,7 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
   const atLimit =
     PREMIUM_RESTRICTIONS_ENABLED && !isPremium && shops.length >= FREE_SHOP_LIMIT;
   const showUpgradeUi = PREMIUM_RESTRICTIONS_ENABLED && !isPremium;
+  const hasCustomShops = shops.some((s) => !s.isDefault);
 
   // Premium status is granted server-side only (verified purchase). The client
   // must never write profiles.is_premium — the database rejects it.
@@ -1438,13 +1439,14 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
 
       <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Manage shops</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Reorder, rename, or add new stores.
+        Add your own shops — not just supermarkets. Butchers, bakery, local stores, anything you
+        like.
       </p>
 
       <div className="mt-7 space-y-3.5">
         {shops.map((s, i) => (
+          <div key={s.id} className="animate-in fade-in slide-in-from-bottom-1 duration-300">
           <StoreCard
-            key={s.id}
             id={s.id}
             name={s.name}
             color={s.color}
@@ -1469,14 +1471,27 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
             </div>
             }
           />
+          </div>
         ))}
       </div>
 
+      {!hasCustomShops && (
+        <div className="mt-5 rounded-3xl bg-secondary/70 px-5 py-5 text-center">
+          <p className="text-[15px] font-semibold">Only using the big supermarkets?</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Add your own shops to personalise your lists.
+          </p>
+        </div>
+      )}
+
       <button
         onClick={onAddClick}
-        className="mt-5 flex w-full items-center justify-center gap-2 rounded-3xl bg-primary px-5 py-5 text-[15px] font-semibold text-primary-foreground shadow-card transition active:scale-[0.99]"
+        className="mt-5 flex w-full items-center justify-center gap-2 rounded-3xl bg-primary px-5 py-5 text-[16px] font-semibold text-primary-foreground shadow-card transition active:scale-[0.99]"
       >
-        <Plus className="h-5 w-5" /> Add shop
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-foreground/20">
+          <Plus className="h-5 w-5" strokeWidth={2.5} />
+        </span>
+        Add your own shop
       </button>
 
       <div className="pb-6" />
@@ -1609,8 +1624,21 @@ function ShopEditorSheet({ shop, onClose }: { shop: Shop | null; onClose: () => 
         </Field>
 
         <Field label="Colour">
+          <div className="mb-3">
+            <StoreCard
+              name={name || "New shop"}
+              id={shop?.id}
+              color={color}
+              subtitle="Preview"
+              showChevron={false}
+            />
+          </div>
           <div className="flex items-center gap-3">
-            <StoreLogo storeName={name || "New shop"} color={color} size={54} radius="50%" />
+            <span
+              aria-hidden
+              className="h-[54px] w-[54px] shrink-0 rounded-full border border-black/10 transition-colors duration-200"
+              style={{ background: color }}
+            />
             <label className="flex flex-1 items-center justify-between rounded-2xl bg-secondary px-4 py-3 text-sm">
               <span className="text-muted-foreground">Custom colour</span>
               <input
