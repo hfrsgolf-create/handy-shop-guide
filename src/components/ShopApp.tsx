@@ -1405,6 +1405,7 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
   const atLimit =
     PREMIUM_RESTRICTIONS_ENABLED && !isPremium && shops.length >= FREE_SHOP_LIMIT;
   const showUpgradeUi = PREMIUM_RESTRICTIONS_ENABLED && !isPremium;
+  const hasCustomShops = shops.some((s) => !s.isDefault);
 
   // Premium status is granted server-side only (verified purchase). The client
   // must never write profiles.is_premium — the database rejects it.
@@ -1623,8 +1624,21 @@ function ShopEditorSheet({ shop, onClose }: { shop: Shop | null; onClose: () => 
         </Field>
 
         <Field label="Colour">
+          <div className="mb-3">
+            <StoreCard
+              name={name || "New shop"}
+              id={shop?.id}
+              color={color}
+              subtitle="Preview"
+              showChevron={false}
+            />
+          </div>
           <div className="flex items-center gap-3">
-            <StoreLogo storeName={name || "New shop"} color={color} size={54} radius="50%" />
+            <span
+              aria-hidden
+              className="h-[54px] w-[54px] shrink-0 rounded-full border border-black/10 transition-colors duration-200"
+              style={{ background: color }}
+            />
             <label className="flex flex-1 items-center justify-between rounded-2xl bg-secondary px-4 py-3 text-sm">
               <span className="text-muted-foreground">Custom colour</span>
               <input
