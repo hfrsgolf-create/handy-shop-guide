@@ -1192,7 +1192,10 @@ function SectionHeader({
       <span className="text-xs font-medium text-muted-foreground">
         {count} {count === 1 ? "item" : "items"}
       </span>
-    </div>
+      <ChevronDown
+        className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-300 ${open ? "" : "-rotate-90"}`}
+      />
+    </button>
   );
 }
 
