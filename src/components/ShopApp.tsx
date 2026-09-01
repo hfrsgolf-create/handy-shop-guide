@@ -34,7 +34,7 @@ import { useShops, FREE_SHOP_LIMIT, SHOP_COLOR_PRESETS, FALLBACK_SHOPS, type Sho
 import { useUserShops } from "@/lib/user-shops";
 import { supabase } from "@/integrations/supabase/client";
 import { Pencil, Sparkles } from "lucide-react";
-import { StoreLogo, StoreTab, StoreCard, brandColor } from "@/lib/store-logos";
+import { StoreLogo, StoreTab, StoreCard, brandColor, tint } from "@/lib/store-logos";
 import { ITEM_CATALOGUE } from "@/lib/item-catalogue";
 import { ScanProductSheet } from "@/components/ScanProductSheet";
 import { ProductImageBox } from "@/components/ProductImageBox";
