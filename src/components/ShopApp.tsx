@@ -1043,30 +1043,41 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
         Tap <span className="font-medium text-foreground">+</span> to add to your shopping list, or tap an item to edit it.
       </p>
 
-      <div className="mt-7 space-y-10 pb-10">
+      <div className="mt-7 pb-10">
         {sections.map((sec) => {
           const list = favs.filter((f) => f.preferredStore === sec.id);
+          const open = !collapsed.includes(sec.id);
           return (
-            <section key={sec.id} className="border-t border-border/40 pt-8 first:mt-0 first:border-t-0 first:pt-0">
-              <SectionHeader sec={sec} count={list.length} />
+            <section
+              key={sec.id}
+              className={`border-t border-border/40 first:border-t-0 first:pt-0 ${open ? "mt-10 pt-8 first:mt-0" : "mt-4 pt-4 first:mt-0"}`}
+            >
+              <SectionHeader sec={sec} count={list.length} open={open} onToggle={() => toggleSection(sec.id)} />
 
-              <div className="mt-4 space-y-2.5">
-                {list.length === 0 ? (
-                  <p className="rounded-2xl bg-secondary/60 px-4 py-4 text-center text-[13px] text-muted-foreground">
-                    Nothing saved here yet.
-                  </p>
-                ) : (
-                  list.map((f) => (
-                    <FavManageRow
-                      key={f.id}
-                      item={f}
-                      already={onList.has(f.name.toLowerCase())}
-                      flash={justAdded === f.id}
-                      onAdd={() => add(f)}
-                      onEdit={() => setEditing(f)}
-                    />
-                  ))
-                )}
+              <div
+                className="grid overflow-hidden transition-all duration-300 ease-out"
+                style={{ gridTemplateRows: open ? "1fr" : "0fr", opacity: open ? 1 : 0 }}
+              >
+                <div className="min-h-0">
+                  <div className="mt-4 space-y-2.5">
+                    {list.length === 0 ? (
+                      <p className="rounded-2xl bg-secondary/60 px-4 py-4 text-center text-[13px] text-muted-foreground">
+                        Nothing saved here yet.
+                      </p>
+                    ) : (
+                      list.map((f) => (
+                        <FavManageRow
+                          key={f.id}
+                          item={f}
+                          already={onList.has(f.name.toLowerCase())}
+                          flash={justAdded === f.id}
+                          onAdd={() => add(f)}
+                          onEdit={() => setEditing(f)}
+                        />
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
             </section>
           );
