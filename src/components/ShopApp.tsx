@@ -1133,6 +1133,28 @@ function FavManageRow({
   );
 }
 
+function SectionHeader({ sec, count }: { sec: FavSection; count: number }) {
+  const accent = brandColor(sec.id, sec.name, sec.color);
+  return (
+    <div
+      className="flex items-center gap-3 rounded-2xl px-4 py-3"
+      style={{ background: sec.id === "any" ? "rgba(0,0,0,0.03)" : tint(accent, 0.08) }}
+    >
+      {sec.id === "any" ? (
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-background text-[14px] shadow-sm">
+          🌍
+        </div>
+      ) : (
+        <StoreLogo storeId={sec.id} storeName={sec.name} color={accent} size={36} radius="50%" />
+      )}
+      <h2 className="flex-1 text-[17px] font-bold tracking-tight text-foreground">{sec.name}</h2>
+      <span className="text-xs font-medium text-muted-foreground">
+        {count} {count === 1 ? "item" : "items"}
+      </span>
+    </div>
+  );
+}
+
 function FavEditSheet({
   item,
   sections,
