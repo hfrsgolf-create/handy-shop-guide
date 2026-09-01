@@ -1135,10 +1135,11 @@ function FavManageRow({
 
 function SectionHeader({ sec, count }: { sec: FavSection; count: number }) {
   const accent = brandColor(sec.id, sec.name, sec.color);
+  const bgStyle = sec.id === "any" ? undefined : { background: tint(accent, 0.08) };
   return (
     <div
-      className="flex items-center gap-3 rounded-2xl px-4 py-3"
-      style={{ background: sec.id === "any" ? "rgba(0,0,0,0.03)" : tint(accent, 0.08) }}
+      className={`flex items-center gap-3 rounded-2xl px-4 py-3 ${sec.id === "any" ? "bg-muted/60" : ""}`}
+      style={bgStyle}
     >
       {sec.id === "any" ? (
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-background text-[14px] shadow-sm">
