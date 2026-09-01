@@ -1043,26 +1043,14 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
         Tap <span className="font-medium text-foreground">+</span> to add to your shopping list, or tap an item to edit it.
       </p>
 
-      <div className="mt-7 space-y-8 pb-10">
+      <div className="mt-7 space-y-10 pb-10">
         {sections.map((sec) => {
           const list = favs.filter((f) => f.preferredStore === sec.id);
           return (
-            <section key={sec.id}>
-              <div className="flex items-center gap-3">
-                {sec.id === "any" ? (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-[13px]">
-                    🌍
-                  </div>
-                ) : (
-                  <StoreLogo storeId={sec.id} storeName={sec.name} color={sec.color} size={32} radius="50%" />
-                )}
-                <h2 className="flex-1 text-[15px] font-semibold tracking-tight">{sec.name}</h2>
-                <span className="text-xs text-muted-foreground">
-                  {list.length} {list.length === 1 ? "item" : "items"}
-                </span>
-              </div>
+            <section key={sec.id} className="border-t border-border/40 pt-8 first:mt-0 first:border-t-0 first:pt-0">
+              <SectionHeader sec={sec} count={list.length} />
 
-              <div className="mt-3 space-y-2">
+              <div className="mt-4 space-y-2.5">
                 {list.length === 0 ? (
                   <p className="rounded-2xl bg-secondary/60 px-4 py-4 text-center text-[13px] text-muted-foreground">
                     Nothing saved here yet.
