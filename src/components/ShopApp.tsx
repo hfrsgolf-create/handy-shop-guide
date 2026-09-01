@@ -33,7 +33,7 @@ import {
 import { useShops, FREE_SHOP_LIMIT, SHOP_COLOR_PRESETS, FALLBACK_SHOPS, type Shop } from "@/lib/shops-store";
 import { useUserShops } from "@/lib/user-shops";
 import { supabase } from "@/integrations/supabase/client";
-import { Pencil, Sparkles } from "lucide-react";
+import { Pencil, Sparkles, ChevronDown } from "lucide-react";
 import { StoreLogo, StoreTab, StoreCard, brandColor, tint } from "@/lib/store-logos";
 import { ITEM_CATALOGUE } from "@/lib/item-catalogue";
 import { ScanProductSheet } from "@/components/ScanProductSheet";
@@ -1007,6 +1007,22 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
   const [editing, setEditing] = useState<Item | null>(null);
   const [justAdded, setJustAdded] = useState<string | null>(null);
 
+  // Collapsed sections, persisted per store (expanded by default).
+  const [collapsed, setCollapsed] = useState<string[]>([]);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("fav-collapsed-sections");
+      if (raw) setCollapsed(JSON.parse(raw));
+    } catch { /* ignore */ }
+  }, []);
+  const toggleSection = (id: string) => {
+    setCollapsed((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      try { localStorage.setItem("fav-collapsed-sections", JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
   const onList = useMemo(
     () => new Set(listItems(items).filter((i) => !i.checked).map((i) => i.name.toLowerCase())),
     [items],
@@ -1043,30 +1059,41 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
         Tap <span className="font-medium text-foreground">+</span> to add to your shopping list, or tap an item to edit it.
       </p>
 
-      <div className="mt-7 space-y-10 pb-10">
+      <div className="mt-7 pb-10">
         {sections.map((sec) => {
           const list = favs.filter((f) => f.preferredStore === sec.id);
+          const open = !collapsed.includes(sec.id);
           return (
-            <section key={sec.id} className="border-t border-border/40 pt-8 first:mt-0 first:border-t-0 first:pt-0">
-              <SectionHeader sec={sec} count={list.length} />
+            <section
+              key={sec.id}
+              className={`border-t border-border/40 first:border-t-0 first:pt-0 ${open ? "mt-10 pt-8 first:mt-0" : "mt-4 pt-4 first:mt-0"}`}
+            >
+              <SectionHeader sec={sec} count={list.length} open={open} onToggle={() => toggleSection(sec.id)} />
 
-              <div className="mt-4 space-y-2.5">
-                {list.length === 0 ? (
-                  <p className="rounded-2xl bg-secondary/60 px-4 py-4 text-center text-[13px] text-muted-foreground">
-                    Nothing saved here yet.
-                  </p>
-                ) : (
-                  list.map((f) => (
-                    <FavManageRow
-                      key={f.id}
-                      item={f}
-                      already={onList.has(f.name.toLowerCase())}
-                      flash={justAdded === f.id}
-                      onAdd={() => add(f)}
-                      onEdit={() => setEditing(f)}
-                    />
-                  ))
-                )}
+              <div
+                className="grid overflow-hidden transition-all duration-300 ease-out"
+                style={{ gridTemplateRows: open ? "1fr" : "0fr", opacity: open ? 1 : 0 }}
+              >
+                <div className="min-h-0">
+                  <div className="mt-4 space-y-2.5">
+                    {list.length === 0 ? (
+                      <p className="rounded-2xl bg-secondary/60 px-4 py-4 text-center text-[13px] text-muted-foreground">
+                        Nothing saved here yet.
+                      </p>
+                    ) : (
+                      list.map((f) => (
+                        <FavManageRow
+                          key={f.id}
+                          item={f}
+                          already={onList.has(f.name.toLowerCase())}
+                          flash={justAdded === f.id}
+                          onAdd={() => add(f)}
+                          onEdit={() => setEditing(f)}
+                        />
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
             </section>
           );
@@ -1133,12 +1160,25 @@ function FavManageRow({
   );
 }
 
-function SectionHeader({ sec, count }: { sec: FavSection; count: number }) {
+function SectionHeader({
+  sec,
+  count,
+  open,
+  onToggle,
+}: {
+  sec: FavSection;
+  count: number;
+  open: boolean;
+  onToggle: () => void;
+}) {
   const accent = brandColor(sec.id, sec.name, sec.color);
   const bgStyle = sec.id === "any" ? undefined : { background: tint(accent, 0.08) };
   return (
-    <div
-      className={`flex items-center gap-3 rounded-2xl px-4 py-3 ${sec.id === "any" ? "bg-muted/60" : ""}`}
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left ${sec.id === "any" ? "bg-muted/60" : ""}`}
       style={bgStyle}
     >
       {sec.id === "any" ? (
@@ -1152,7 +1192,10 @@ function SectionHeader({ sec, count }: { sec: FavSection; count: number }) {
       <span className="text-xs font-medium text-muted-foreground">
         {count} {count === 1 ? "item" : "items"}
       </span>
-    </div>
+      <ChevronDown
+        className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-300 ${open ? "" : "-rotate-90"}`}
+      />
+    </button>
   );
 }
 
