@@ -1007,6 +1007,22 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
   const [editing, setEditing] = useState<Item | null>(null);
   const [justAdded, setJustAdded] = useState<string | null>(null);
 
+  // Collapsed sections, persisted per store (expanded by default).
+  const [collapsed, setCollapsed] = useState<string[]>([]);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("fav-collapsed-sections");
+      if (raw) setCollapsed(JSON.parse(raw));
+    } catch { /* ignore */ }
+  }, []);
+  const toggleSection = (id: string) => {
+    setCollapsed((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      try { localStorage.setItem("fav-collapsed-sections", JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
   const onList = useMemo(
     () => new Set(listItems(items).filter((i) => !i.checked).map((i) => i.name.toLowerCase())),
     [items],
