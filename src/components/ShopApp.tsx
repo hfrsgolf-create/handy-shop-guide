@@ -1160,12 +1160,25 @@ function FavManageRow({
   );
 }
 
-function SectionHeader({ sec, count }: { sec: FavSection; count: number }) {
+function SectionHeader({
+  sec,
+  count,
+  open,
+  onToggle,
+}: {
+  sec: FavSection;
+  count: number;
+  open: boolean;
+  onToggle: () => void;
+}) {
   const accent = brandColor(sec.id, sec.name, sec.color);
   const bgStyle = sec.id === "any" ? undefined : { background: tint(accent, 0.08) };
   return (
-    <div
-      className={`flex items-center gap-3 rounded-2xl px-4 py-3 ${sec.id === "any" ? "bg-muted/60" : ""}`}
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left ${sec.id === "any" ? "bg-muted/60" : ""}`}
       style={bgStyle}
     >
       {sec.id === "any" ? (
