@@ -453,6 +453,7 @@ function StoreSection({
   muted,
   soft,
   badge,
+  onPreviewImage,
 }: {
   title: string;
   items: Item[];
@@ -460,6 +461,7 @@ function StoreSection({
   muted?: boolean;
   soft?: boolean;
   badge?: string;
+  onPreviewImage: (src: string) => void;
 }) {
   if (items.length === 0) return null;
   const remaining = items.filter((i) => !i.checked);
@@ -477,6 +479,7 @@ function StoreSection({
             onToggle={() => onToggle(it.id)}
             soft={soft}
             badge={badge}
+            onImageClick={onPreviewImage}
           />
         ))}
       </ul>
