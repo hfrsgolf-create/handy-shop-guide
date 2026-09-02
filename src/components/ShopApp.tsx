@@ -1892,11 +1892,13 @@ function ShoppingRow({
   onToggle,
   soft,
   badge,
+  onImageClick,
 }: {
   item: Item;
   onToggle: () => void;
   soft?: boolean;
   badge?: string;
+  onImageClick?: (src: string) => void;
 }) {
   const image = (item as Item & { image?: string }).image;
   const uncheckedBg = soft ? "bg-[#fdf5f5]" : "bg-[#fdeeee]";
@@ -1919,12 +1921,22 @@ function ShoppingRow({
       </button>
 
       {image && (
-        <img
-          src={image}
-          alt=""
-          loading="lazy"
-          className="h-9 w-9 shrink-0 rounded-lg object-cover"
-        />
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onImageClick?.(image);
+          }}
+          aria-label={`View image of ${item.name}`}
+          className="shrink-0 overflow-hidden rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          <img
+            src={image}
+            alt=""
+            loading="lazy"
+            className="h-9 w-9 object-cover"
+          />
+        </button>
       )}
 
       <span
