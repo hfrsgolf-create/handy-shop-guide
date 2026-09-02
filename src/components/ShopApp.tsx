@@ -66,6 +66,7 @@ export function ShopApp() {
   const [screen, setScreen] = useState<Screen>({ name: "home" });
   const [favDraft, setFavDraft] = useState<FavDraft>(EMPTY_FAV_DRAFT);
   const [editingDealFor, setEditingDealFor] = useState<Item | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [spinnerExpired, setSpinnerExpired] = useState(false);
 
   useEffect(() => {
