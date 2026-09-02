@@ -107,7 +107,7 @@ export function ShopApp() {
         {screen.name === "home" && <HomeScreen go={go} />}
         {screen.name === "goShopping" && <GoShoppingScreen go={go} />}
         {screen.name === "store" && (
-          <StoreScreen storeId={screen.storeId} go={go} onEditDeal={setEditingDealFor} />
+          <StoreScreen storeId={screen.storeId} go={go} onEditDeal={setEditingDealFor} onPreviewImage={setPreviewImage} />
         )}
         {screen.name === "addItem" && <AddItemScreen go={go} />}
         {screen.name === "favourites" && (
