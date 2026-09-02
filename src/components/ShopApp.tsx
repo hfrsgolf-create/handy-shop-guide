@@ -132,6 +132,8 @@ export function ShopApp() {
       <BottomBar current={screen} go={go} />
 
       {editingDealFor && <DealSheet item={editingDealFor} onClose={() => setEditingDealFor(null)} />}
+
+      <Lightbox src={previewImage} onClose={() => setPreviewImage(null)} />
     </div>
   );
 }
