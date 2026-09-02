@@ -1789,7 +1789,7 @@ function ConfirmSheet({
 
 /* ---------- MASTER LIST ---------- */
 
-function MasterListScreen({ go }: { go: (s: Screen) => void; onEditDeal: (it: Item) => void }) {
+function MasterListScreen({ go, onEditDeal, onPreviewImage }: { go: (s: Screen) => void; onEditDeal: (it: Item) => void; onPreviewImage: (src: string) => void }) {
   const items = useShop((s) => s.items);
   const addItem = useShop((s) => s.addItem);
   const toggleCheck = useShop((s) => s.toggleCheck);
