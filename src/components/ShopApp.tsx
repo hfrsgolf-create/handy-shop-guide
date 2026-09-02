@@ -1007,18 +1007,18 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
   const [editing, setEditing] = useState<Item | null>(null);
   const [justAdded, setJustAdded] = useState<string | null>(null);
 
-  // Collapsed sections, persisted per store (expanded by default).
-  const [collapsed, setCollapsed] = useState<string[]>([]);
+  // Expanded sections, persisted per store. Unknown/new stores start COLLAPSED.
+  const [expanded, setExpanded] = useState<string[]>([]);
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("fav-collapsed-sections");
-      if (raw) setCollapsed(JSON.parse(raw));
+      const raw = localStorage.getItem("fav-expanded-sections");
+      if (raw) setExpanded(JSON.parse(raw));
     } catch { /* ignore */ }
   }, []);
   const toggleSection = (id: string) => {
-    setCollapsed((prev) => {
+    setExpanded((prev) => {
       const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
-      try { localStorage.setItem("fav-collapsed-sections", JSON.stringify(next)); } catch { /* ignore */ }
+      try { localStorage.setItem("fav-expanded-sections", JSON.stringify(next)); } catch { /* ignore */ }
       return next;
     });
   };
@@ -1062,7 +1062,7 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
       <div className="mt-7 pb-10">
         {sections.map((sec) => {
           const list = favs.filter((f) => f.preferredStore === sec.id);
-          const open = !collapsed.includes(sec.id);
+          const open = expanded.includes(sec.id);
           return (
             <section
               key={sec.id}
@@ -1077,8 +1077,8 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
                 <div className="min-h-0">
                   <div className="mt-4 space-y-2.5">
                     {list.length === 0 ? (
-                      <p className="rounded-2xl bg-secondary/60 px-4 py-4 text-center text-[13px] text-muted-foreground">
-                        Nothing saved here yet.
+                      <p className="rounded-2xl bg-secondary/60 px-4 py-3 text-center text-[13px] text-muted-foreground">
+                        No favourites yet
                       </p>
                     ) : (
                       list.map((f) => (
@@ -1188,10 +1188,9 @@ function SectionHeader({
       ) : (
         <StoreLogo storeId={sec.id} storeName={sec.name} color={accent} size={36} radius="50%" />
       )}
-      <h2 className="flex-1 text-[17px] font-bold tracking-tight text-foreground">{sec.name}</h2>
-      <span className="text-xs font-medium text-muted-foreground">
-        {count} {count === 1 ? "item" : "items"}
-      </span>
+      <h2 className="flex-1 text-[17px] font-bold tracking-tight text-foreground">
+        {sec.name} <span className="font-semibold text-muted-foreground">({count})</span>
+      </h2>
       <ChevronDown
         className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-300 ${open ? "" : "-rotate-90"}`}
       />
