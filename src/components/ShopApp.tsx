@@ -1188,10 +1188,9 @@ function SectionHeader({
       ) : (
         <StoreLogo storeId={sec.id} storeName={sec.name} color={accent} size={36} radius="50%" />
       )}
-      <h2 className="flex-1 text-[17px] font-bold tracking-tight text-foreground">{sec.name}</h2>
-      <span className="text-xs font-medium text-muted-foreground">
-        {count} {count === 1 ? "item" : "items"}
-      </span>
+      <h2 className="flex-1 text-[17px] font-bold tracking-tight text-foreground">
+        {sec.name} <span className="font-semibold text-muted-foreground">({count})</span>
+      </h2>
       <ChevronDown
         className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-300 ${open ? "" : "-rotate-90"}`}
       />
