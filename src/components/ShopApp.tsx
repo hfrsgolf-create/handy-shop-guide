@@ -1062,7 +1062,7 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
       <div className="mt-7 pb-10">
         {sections.map((sec) => {
           const list = favs.filter((f) => f.preferredStore === sec.id);
-          const open = !collapsed.includes(sec.id);
+          const open = expanded.includes(sec.id);
           return (
             <section
               key={sec.id}
