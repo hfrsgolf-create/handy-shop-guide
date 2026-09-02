@@ -126,7 +126,7 @@ export function ShopApp() {
         {screen.name === "favouritesByShop" && <FavouritesByShopScreen go={go} />}
         {screen.name === "storeFavourites" && <StoreFavouritesScreen storeId={screen.storeId} go={go} />}
         {screen.name === "manageShops" && <ManageShopsScreen go={go} />}
-        {screen.name === "masterList" && <MasterListScreen go={go} onEditDeal={setEditingDealFor} />}
+        {screen.name === "masterList" && <MasterListScreen go={go} onEditDeal={setEditingDealFor} onPreviewImage={setPreviewImage} />}
       </main>
 
       <BottomBar current={screen} go={go} />
