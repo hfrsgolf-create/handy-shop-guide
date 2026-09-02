@@ -431,9 +431,10 @@ function StoreScreen({
         items={preferredHere}
         onToggle={toggleCheck}
         badge="Preferred"
+        onPreviewImage={onPreviewImage}
       />
-      <StoreSection title="🔥 Deals in this store" items={dealsHere} onToggle={toggleCheck} />
-      <StoreSection title="Other available items" items={other} onToggle={toggleCheck} muted soft />
+      <StoreSection title="🔥 Deals in this store" items={dealsHere} onToggle={toggleCheck} onPreviewImage={onPreviewImage} />
+      <StoreSection title="Other available items" items={other} onToggle={toggleCheck} muted soft onPreviewImage={onPreviewImage} />
 
       {visible.length === 0 && (
         <div className="mt-8 rounded-3xl bg-card px-5 py-10 text-center text-sm text-muted-foreground">
