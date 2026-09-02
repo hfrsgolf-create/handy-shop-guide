@@ -1077,8 +1077,8 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
                 <div className="min-h-0">
                   <div className="mt-4 space-y-2.5">
                     {list.length === 0 ? (
-                      <p className="rounded-2xl bg-secondary/60 px-4 py-4 text-center text-[13px] text-muted-foreground">
-                        Nothing saved here yet.
+                      <p className="rounded-2xl bg-secondary/60 px-4 py-3 text-center text-[13px] text-muted-foreground">
+                        No favourites yet
                       </p>
                     ) : (
                       list.map((f) => (
