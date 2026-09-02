@@ -66,6 +66,7 @@ export function ShopApp() {
   const [screen, setScreen] = useState<Screen>({ name: "home" });
   const [favDraft, setFavDraft] = useState<FavDraft>(EMPTY_FAV_DRAFT);
   const [editingDealFor, setEditingDealFor] = useState<Item | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [spinnerExpired, setSpinnerExpired] = useState(false);
 
   useEffect(() => {
@@ -106,7 +107,7 @@ export function ShopApp() {
         {screen.name === "home" && <HomeScreen go={go} />}
         {screen.name === "goShopping" && <GoShoppingScreen go={go} />}
         {screen.name === "store" && (
-          <StoreScreen storeId={screen.storeId} go={go} onEditDeal={setEditingDealFor} />
+          <StoreScreen storeId={screen.storeId} go={go} onEditDeal={setEditingDealFor} onPreviewImage={setPreviewImage} />
         )}
         {screen.name === "addItem" && <AddItemScreen go={go} />}
         {screen.name === "favourites" && (
@@ -125,12 +126,14 @@ export function ShopApp() {
         {screen.name === "favouritesByShop" && <FavouritesByShopScreen go={go} />}
         {screen.name === "storeFavourites" && <StoreFavouritesScreen storeId={screen.storeId} go={go} />}
         {screen.name === "manageShops" && <ManageShopsScreen go={go} />}
-        {screen.name === "masterList" && <MasterListScreen go={go} onEditDeal={setEditingDealFor} />}
+        {screen.name === "masterList" && <MasterListScreen go={go} onEditDeal={setEditingDealFor} onPreviewImage={setPreviewImage} />}
       </main>
 
       <BottomBar current={screen} go={go} />
 
       {editingDealFor && <DealSheet item={editingDealFor} onClose={() => setEditingDealFor(null)} />}
+
+      <Lightbox src={previewImage} onClose={() => setPreviewImage(null)} />
     </div>
   );
 }
@@ -354,10 +357,12 @@ function StoreScreen({
   storeId,
   go,
   onEditDeal,
+  onPreviewImage,
 }: {
   storeId: Exclude<StoreId, "any">;
   go: (s: Screen) => void;
   onEditDeal: (it: Item) => void;
+  onPreviewImage: (src: string) => void;
 }) {
   const items = useShop((s) => s.items);
   const shops = useShops((s) => s.shops);
@@ -426,9 +431,10 @@ function StoreScreen({
         items={preferredHere}
         onToggle={toggleCheck}
         badge="Preferred"
+        onPreviewImage={onPreviewImage}
       />
-      <StoreSection title="🔥 Deals in this store" items={dealsHere} onToggle={toggleCheck} />
-      <StoreSection title="Other available items" items={other} onToggle={toggleCheck} muted soft />
+      <StoreSection title="🔥 Deals in this store" items={dealsHere} onToggle={toggleCheck} onPreviewImage={onPreviewImage} />
+      <StoreSection title="Other available items" items={other} onToggle={toggleCheck} muted soft onPreviewImage={onPreviewImage} />
 
       {visible.length === 0 && (
         <div className="mt-8 rounded-3xl bg-card px-5 py-10 text-center text-sm text-muted-foreground">
@@ -447,6 +453,7 @@ function StoreSection({
   muted,
   soft,
   badge,
+  onPreviewImage,
 }: {
   title: string;
   items: Item[];
@@ -454,6 +461,7 @@ function StoreSection({
   muted?: boolean;
   soft?: boolean;
   badge?: string;
+  onPreviewImage: (src: string) => void;
 }) {
   if (items.length === 0) return null;
   const remaining = items.filter((i) => !i.checked);
@@ -471,6 +479,7 @@ function StoreSection({
             onToggle={() => onToggle(it.id)}
             soft={soft}
             badge={badge}
+            onImageClick={onPreviewImage}
           />
         ))}
       </ul>
@@ -1780,7 +1789,7 @@ function ConfirmSheet({
 
 /* ---------- MASTER LIST ---------- */
 
-function MasterListScreen({ go }: { go: (s: Screen) => void; onEditDeal: (it: Item) => void }) {
+function MasterListScreen({ go, onEditDeal, onPreviewImage }: { go: (s: Screen) => void; onEditDeal: (it: Item) => void; onPreviewImage: (src: string) => void }) {
   const items = useShop((s) => s.items);
   const addItem = useShop((s) => s.addItem);
   const toggleCheck = useShop((s) => s.toggleCheck);
@@ -1869,7 +1878,7 @@ function MasterListScreen({ go }: { go: (s: Screen) => void; onEditDeal: (it: It
       ) : (
         <ul className="mt-6 space-y-2.5">
           {[...remaining, ...checked].map((it) => (
-            <ShoppingRow key={it.id} item={it} onToggle={() => toggleCheck(it.id)} />
+            <ShoppingRow key={it.id} item={it} onToggle={() => toggleCheck(it.id)} onImageClick={onPreviewImage} />
           ))}
         </ul>
       )}
@@ -1883,11 +1892,13 @@ function ShoppingRow({
   onToggle,
   soft,
   badge,
+  onImageClick,
 }: {
   item: Item;
   onToggle: () => void;
   soft?: boolean;
   badge?: string;
+  onImageClick?: (src: string) => void;
 }) {
   const image = (item as Item & { image?: string }).image;
   const uncheckedBg = soft ? "bg-[#fdf5f5]" : "bg-[#fdeeee]";
@@ -1910,12 +1921,22 @@ function ShoppingRow({
       </button>
 
       {image && (
-        <img
-          src={image}
-          alt=""
-          loading="lazy"
-          className="h-9 w-9 shrink-0 rounded-lg object-cover"
-        />
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onImageClick?.(image);
+          }}
+          aria-label={`View image of ${item.name}`}
+          className="shrink-0 overflow-hidden rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          <img
+            src={image}
+            alt=""
+            loading="lazy"
+            className="h-9 w-9 object-cover"
+          />
+        </button>
       )}
 
       <span
@@ -2181,6 +2202,33 @@ function ChoiceChip({
     >
       {children}
     </button>
+  );
+}
+
+function Lightbox({ src, onClose }: { src: string | null; onClose: () => void }) {
+  if (!src) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-6 animate-in fade-in duration-200"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close image preview"
+        className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition active:scale-95"
+      >
+        <X className="h-5 w-5" />
+      </button>
+      <img
+        src={src}
+        alt="Product preview"
+        className="max-h-full max-w-full rounded-2xl object-contain shadow-2xl animate-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      />
+    </div>
   );
 }
 
