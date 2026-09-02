@@ -1878,7 +1878,7 @@ function MasterListScreen({ go, onEditDeal, onPreviewImage }: { go: (s: Screen) 
       ) : (
         <ul className="mt-6 space-y-2.5">
           {[...remaining, ...checked].map((it) => (
-            <ShoppingRow key={it.id} item={it} onToggle={() => toggleCheck(it.id)} />
+            <ShoppingRow key={it.id} item={it} onToggle={() => toggleCheck(it.id)} onImageClick={onPreviewImage} />
           ))}
         </ul>
       )}
