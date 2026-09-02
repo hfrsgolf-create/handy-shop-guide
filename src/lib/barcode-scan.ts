@@ -95,26 +95,46 @@ function drawToDataUrl(src: CanvasImageSource, w0: number, h0: number, max: numb
  * captures on some devices). Throws when nothing can be decoded.
  */
 export async function fileToSmallDataUrl(file: File, max = 200): Promise<string> {
-  const objectUrl = URL.createObjectURL(file);
+  // Read the bytes FIRST: on iOS the underlying blob can become unreadable once
+  // the file input is reset or the page re-renders after a camera capture.
+  const raw = await readFileAsDataUrl(file);
+  return (await shrinkDataUrl(raw, max)) ?? raw;
+}
+
+/** Reads a File/Blob into a base64 data URL. Never throws silently. */
+export function readFileAsDataUrl(file: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const out = typeof reader.result === "string" ? reader.result : "";
+      if (out.length < 32) reject(new Error("empty image data"));
+      else resolve(out);
+    };
+    reader.onerror = () => reject(reader.error ?? new Error("read failed"));
+    reader.onabort = () => reject(new Error("read aborted"));
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Downscales a data URL to a small JPEG. Returns null when the browser can't
+ * decode it (e.g. HEIC) so callers can fall back to the original bytes.
+ */
+export async function shrinkDataUrl(dataUrl: string, max = 480): Promise<string | null> {
   try {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const el = new Image();
       el.onload = () => resolve(el);
       el.onerror = () => reject(new Error("decode failed"));
-      el.src = objectUrl;
+      el.src = dataUrl;
     });
-    return drawToDataUrl(img, img.naturalWidth || img.width, img.naturalHeight || img.height, max);
-  } catch {
-    if (typeof createImageBitmap === "function") {
-      const bmp = await createImageBitmap(file);
-      try {
-        return drawToDataUrl(bmp, bmp.width, bmp.height, max);
-      } finally {
-        bmp.close?.();
-      }
-    }
-    throw new Error("Couldn't read that image");
-  } finally {
-    URL.revokeObjectURL(objectUrl);
+    const w0 = img.naturalWidth || img.width;
+    const h0 = img.naturalHeight || img.height;
+    if (!w0 || !h0) return null;
+    return drawToDataUrl(img, w0, h0, max);
+  } catch (e) {
+    console.warn("[image] downscale skipped, keeping original", e);
+    return null;
   }
 }
+
