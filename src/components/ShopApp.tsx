@@ -357,10 +357,12 @@ function StoreScreen({
   storeId,
   go,
   onEditDeal,
+  onPreviewImage,
 }: {
   storeId: Exclude<StoreId, "any">;
   go: (s: Screen) => void;
   onEditDeal: (it: Item) => void;
+  onPreviewImage: (src: string) => void;
 }) {
   const items = useShop((s) => s.items);
   const shops = useShops((s) => s.shops);
