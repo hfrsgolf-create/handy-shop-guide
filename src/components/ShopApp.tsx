@@ -2135,6 +2135,42 @@ function BottomBar({ current, go }: { current: Screen; go: (s: Screen) => void }
 
 /* ---------- PRIMITIVES ---------- */
 
+/** Soft pastel header tints, one per page. */
+export const PAGE_TINTS = {
+  home: "#e9f1e6",
+  goShopping: "#e4f2e6",
+  addItem: "#e5f4ed",
+  masterList: "#efeaf9",
+  favourites: "#fdf4dc",
+  favouritesByShop: "#fdefe6",
+  manageShops: "#e7effa",
+} as const;
+
+/**
+ * Reusable coloured page header panel. Sits inside a screen wrapper that uses
+ * `px-6 pt-14`, cancelling that padding so the panel spans the full width.
+ */
+function PageHeader({
+  tint: tintColor,
+  children,
+  className = "",
+}: {
+  tint: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`-mx-6 -mt-14 mb-2 rounded-b-[2rem] px-6 pb-7 pt-14 sm:px-8 ${className}`}
+      style={{ backgroundColor: tintColor }}
+    >
+      {children}
+    </div>
+  );
+}
+
+
+
 function BackHeader({ go, to, label }: { go: (s: Screen) => void; to?: Screen; label?: string }) {
   return (
     <button
