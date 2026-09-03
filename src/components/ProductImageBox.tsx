@@ -33,18 +33,30 @@ export function ProductImageBox({
 
   const handleFile = async (input: HTMLInputElement) => {
     const file = input.files?.[0];
-    // allow re-picking the same file next time
-    input.value = "";
-    if (!file) return;
+    if (!file) {
+      // user cancelled the camera
+      input.value = "";
+      return;
+    }
+    console.info("[ProductImageBox] captured file", {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+    });
     setBusy(true);
     try {
+      // read bytes BEFORE resetting the input — on iOS the blob dies otherwise
       const dataUrl = await fileToSmallDataUrl(file, 480);
       if (!dataUrl || dataUrl.length < 32) throw new Error("empty image");
+      console.info("[ProductImageBox] saved image", { length: dataUrl.length });
       onCapture(dataUrl);
+      toast.success("Photo saved");
     } catch (e) {
       console.error("[ProductImageBox] capture failed", e);
       toast.error("Photo couldn't be saved. Please try again.");
     } finally {
+      // allow re-picking the same file next time
+      input.value = "";
       setBusy(false);
     }
   };
