@@ -234,12 +234,14 @@ function HomeScreen({ go }: { go: (s: Screen) => void }) {
 
   return (
     <div className="px-6 pt-16">
-      <header>
-        <p className="text-sm font-medium text-[#2f6b3f]">Hi {firstName} <span className="ml-0.5">👋</span></p>
-        <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-tight">
-          What do you want to do today?
-        </h1>
-      </header>
+      <PageHeader tint={PAGE_TINTS.home} className="-mt-16 pt-16">
+        <header>
+          <p className="text-sm font-medium text-[#2f6b3f]">Hi {firstName} <span className="ml-0.5">👋</span></p>
+          <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-tight">
+            What do you want to do today?
+          </h1>
+        </header>
+      </PageHeader>
 
       <div className="mt-6 space-y-3">
         {actions.map((a) => (
@@ -290,9 +292,11 @@ function GoShoppingScreen({ go }: { go: (s: Screen) => void }) {
 
   return (
     <div className="px-6 pt-14">
-      <BackHeader go={go} />
-      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Where are you shopping?</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Tap a shop to see what to buy there.</p>
+      <PageHeader tint={PAGE_TINTS.goShopping}>
+        <BackHeader go={go} />
+        <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Where are you shopping?</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Tap a shop to see what to buy there.</p>
+      </PageHeader>
 
       <div className="mt-8 space-y-3.5">
         {shops.map((store) => {
@@ -546,9 +550,11 @@ function AddItemScreen({ go }: { go: (s: Screen) => void }) {
 
   return (
     <div className="px-6 pt-14">
-      <BackHeader go={go} />
-      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Add to Shopping List</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Search — tap any result to add instantly.</p>
+      <PageHeader tint={PAGE_TINTS.addItem}>
+        <BackHeader go={go} />
+        <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Add to Shopping List</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Search — tap any result to add instantly.</p>
+      </PageHeader>
 
       <div className="mt-6 flex gap-2">
         <input
@@ -725,11 +731,13 @@ function FavouritesScreen({
 
   return (
     <div className="px-6 pt-14">
-      <BackHeader go={go} />
-      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Add favourites</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Save items you buy often — they'll suggest as you type.
-      </p>
+      <PageHeader tint={PAGE_TINTS.favourites}>
+        <BackHeader go={go} />
+        <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Add favourites</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Save items you buy often — they'll suggest as you type.
+        </p>
+      </PageHeader>
 
       {/* Scan a product barcode */}
       <button
@@ -959,9 +967,11 @@ function SelectStoreScreen({
 
   return (
     <div className="px-6 pt-14">
-      <BackHeader go={go} to={{ name: "favourites" }} label="Add favourites" />
-      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Select store</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Tap a store to use it for this favourite.</p>
+      <PageHeader tint={PAGE_TINTS.favourites}>
+        <BackHeader go={go} to={{ name: "favourites" }} label="Add favourites" />
+        <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Select store</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Tap a store to use it for this favourite.</p>
+      </PageHeader>
 
       <div className="mt-6 space-y-3 pb-6">
         <StoreCard
@@ -1062,11 +1072,13 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
 
   return (
     <div className="px-6 pt-14">
-      <BackHeader go={go} />
-      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">View &amp; manage favourites</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Tap <span className="font-medium text-foreground">+</span> to add to your shopping list, or tap an item to edit it.
-      </p>
+      <PageHeader tint={PAGE_TINTS.favouritesByShop}>
+        <BackHeader go={go} />
+        <h1 className="mt-3 text-[28px] font-semibold tracking-tight">View &amp; manage favourites</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Tap <span className="font-medium text-foreground">+</span> to add to your shopping list, or tap an item to edit it.
+        </p>
+      </PageHeader>
 
       <div className="mt-7 pb-10">
         {sections.map((sec) => {
@@ -1350,11 +1362,19 @@ function StoreFavouritesScreen({ storeId, go }: { storeId: StoreId; go: (s: Scre
 
   return (
     <div className="px-6 pt-14">
-      <BackHeader go={go} to={{ name: "favouritesByShop" }} label="Favourites" />
-      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">{title}</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {list.length} {list.length === 1 ? "item" : "items"}
-      </p>
+      <PageHeader
+        tint={
+          storeId === "any"
+            ? PAGE_TINTS.favouritesByShop
+            : tint(brandColor(storeId, storeName(storeId)), 0.14)
+        }
+      >
+        <BackHeader go={go} to={{ name: "favouritesByShop" }} label="Favourites" />
+        <h1 className="mt-3 text-[28px] font-semibold tracking-tight">{title}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {list.length} {list.length === 1 ? "item" : "items"}
+        </p>
+      </PageHeader>
 
       <div className="mt-6 space-y-2 pb-6">
         {list.length === 0 && (
