@@ -234,12 +234,14 @@ function HomeScreen({ go }: { go: (s: Screen) => void }) {
 
   return (
     <div className="px-6 pt-16">
-      <header>
-        <p className="text-sm font-medium text-[#2f6b3f]">Hi {firstName} <span className="ml-0.5">👋</span></p>
-        <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-tight">
-          What do you want to do today?
-        </h1>
-      </header>
+      <PageHeader tint={PAGE_TINTS.home} className="-mt-16 pt-16">
+        <header>
+          <p className="text-sm font-medium text-[#2f6b3f]">Hi {firstName} <span className="ml-0.5">👋</span></p>
+          <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-tight">
+            What do you want to do today?
+          </h1>
+        </header>
+      </PageHeader>
 
       <div className="mt-6 space-y-3">
         {actions.map((a) => (
@@ -290,9 +292,11 @@ function GoShoppingScreen({ go }: { go: (s: Screen) => void }) {
 
   return (
     <div className="px-6 pt-14">
-      <BackHeader go={go} />
-      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Where are you shopping?</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Tap a shop to see what to buy there.</p>
+      <PageHeader tint={PAGE_TINTS.goShopping}>
+        <BackHeader go={go} />
+        <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Where are you shopping?</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Tap a shop to see what to buy there.</p>
+      </PageHeader>
 
       <div className="mt-8 space-y-3.5">
         {shops.map((store) => {
@@ -394,31 +398,33 @@ function StoreScreen({
 
   return (
     <div className="px-6 pt-14">
-      <BackHeader go={go} to={{ name: "goShopping" }} label="Shops" />
-      <div className="mt-3 flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <StoreLogo
-            storeId={store.id}
-            storeName={store.name}
-            color={brandColor(store.id, store.name, store.color)}
-            size={54}
-            radius="50%"
-            style={{ background: "#ffffff", boxShadow: "0 1px 2px rgba(16,24,40,0.08)" }}
-          />
-          <div className="min-w-0">
-            <h1 className="truncate text-[28px] font-semibold tracking-tight">{store.name}</h1>
-            <p className="text-sm text-muted-foreground">
-              {remaining.length} left · {checked.length} in basket
-            </p>
+      <PageHeader tint={tint(brandColor(store.id, store.name, store.color), 0.14)}>
+        <BackHeader go={go} to={{ name: "goShopping" }} label="Shops" />
+        <div className="mt-3 flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <StoreLogo
+              storeId={store.id}
+              storeName={store.name}
+              color={brandColor(store.id, store.name, store.color)}
+              size={54}
+              radius="50%"
+              style={{ background: "#ffffff", boxShadow: "0 1px 2px rgba(16,24,40,0.08)" }}
+            />
+            <div className="min-w-0">
+              <h1 className="truncate text-[28px] font-semibold tracking-tight">{store.name}</h1>
+              <p className="text-sm text-muted-foreground">
+                {remaining.length} left · {checked.length} in basket
+              </p>
+            </div>
           </div>
+          <button
+            onClick={checkout}
+            className="mt-1 shrink-0 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition active:scale-[0.97]"
+          >
+            Checkout
+          </button>
         </div>
-        <button
-          onClick={checkout}
-          className="mt-1 shrink-0 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition active:scale-[0.97]"
-        >
-          Checkout
-        </button>
-      </div>
+      </PageHeader>
 
       {dealsCount > 0 && (
         <div className="mt-5 rounded-2xl bg-deal-soft px-5 py-4 text-sm text-deal">
@@ -546,9 +552,11 @@ function AddItemScreen({ go }: { go: (s: Screen) => void }) {
 
   return (
     <div className="px-6 pt-14">
-      <BackHeader go={go} />
-      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Add to Shopping List</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Search — tap any result to add instantly.</p>
+      <PageHeader tint={PAGE_TINTS.addItem}>
+        <BackHeader go={go} />
+        <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Add to Shopping List</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Search — tap any result to add instantly.</p>
+      </PageHeader>
 
       <div className="mt-6 flex gap-2">
         <input
@@ -725,11 +733,13 @@ function FavouritesScreen({
 
   return (
     <div className="px-6 pt-14">
-      <BackHeader go={go} />
-      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Add favourites</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Save items you buy often — they'll suggest as you type.
-      </p>
+      <PageHeader tint={PAGE_TINTS.favourites}>
+        <BackHeader go={go} />
+        <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Add favourites</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Save items you buy often — they'll suggest as you type.
+        </p>
+      </PageHeader>
 
       {/* Scan a product barcode */}
       <button
@@ -959,9 +969,11 @@ function SelectStoreScreen({
 
   return (
     <div className="px-6 pt-14">
-      <BackHeader go={go} to={{ name: "favourites" }} label="Add favourites" />
-      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Select store</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Tap a store to use it for this favourite.</p>
+      <PageHeader tint={PAGE_TINTS.favourites}>
+        <BackHeader go={go} to={{ name: "favourites" }} label="Add favourites" />
+        <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Select store</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Tap a store to use it for this favourite.</p>
+      </PageHeader>
 
       <div className="mt-6 space-y-3 pb-6">
         <StoreCard
@@ -1062,11 +1074,13 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
 
   return (
     <div className="px-6 pt-14">
-      <BackHeader go={go} />
-      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">View &amp; manage favourites</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Tap <span className="font-medium text-foreground">+</span> to add to your shopping list, or tap an item to edit it.
-      </p>
+      <PageHeader tint={PAGE_TINTS.favouritesByShop}>
+        <BackHeader go={go} />
+        <h1 className="mt-3 text-[28px] font-semibold tracking-tight">View &amp; manage favourites</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Tap <span className="font-medium text-foreground">+</span> to add to your shopping list, or tap an item to edit it.
+        </p>
+      </PageHeader>
 
       <div className="mt-7 pb-10">
         {sections.map((sec) => {
@@ -1350,11 +1364,19 @@ function StoreFavouritesScreen({ storeId, go }: { storeId: StoreId; go: (s: Scre
 
   return (
     <div className="px-6 pt-14">
-      <BackHeader go={go} to={{ name: "favouritesByShop" }} label="Favourites" />
-      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">{title}</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {list.length} {list.length === 1 ? "item" : "items"}
-      </p>
+      <PageHeader
+        tint={
+          storeId === "any"
+            ? PAGE_TINTS.favouritesByShop
+            : tint(brandColor(storeId, storeName(storeId)), 0.14)
+        }
+      >
+        <BackHeader go={go} to={{ name: "favouritesByShop" }} label="Favourites" />
+        <h1 className="mt-3 text-[28px] font-semibold tracking-tight">{title}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {list.length} {list.length === 1 ? "item" : "items"}
+        </p>
+      </PageHeader>
 
       <div className="mt-6 space-y-2 pb-6">
         {list.length === 0 && (
@@ -1486,23 +1508,25 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
 
   return (
     <div className="px-6 pt-14">
-      <div className="flex items-start justify-between gap-3">
-        <BackHeader go={go} />
-        {showUpgradeUi && (
-          <button
-            onClick={() => setShowUpgrade(true)}
-            className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground"
-          >
-            <Sparkles className="h-3.5 w-3.5" /> Upgrade
-          </button>
-        )}
-      </div>
+      <PageHeader tint={PAGE_TINTS.manageShops}>
+        <div className="flex items-start justify-between gap-3">
+          <BackHeader go={go} />
+          {showUpgradeUi && (
+            <button
+              onClick={() => setShowUpgrade(true)}
+              className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground"
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Upgrade
+            </button>
+          )}
+        </div>
 
-      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Manage shops</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Add your own shops — not just supermarkets. Butchers, bakery, local stores, anything you
-        like.
-      </p>
+        <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Manage shops</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Add your own shops — not just supermarkets. Butchers, bakery, local stores, anything you
+          like.
+        </p>
+      </PageHeader>
 
       <div className="mt-7 space-y-3.5">
         {shops.map((s, i) => (
@@ -1834,21 +1858,23 @@ function MasterListScreen({ go, onEditDeal, onPreviewImage }: { go: (s: Screen) 
 
   return (
     <div className="px-6 pt-14">
-      <BackHeader go={go} />
-      <div className="mt-3 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-[28px] font-semibold tracking-tight">Shopping list</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {remaining.length} left · {checked.length} in basket
-          </p>
+      <PageHeader tint={PAGE_TINTS.masterList}>
+        <BackHeader go={go} />
+        <div className="mt-3 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-[28px] font-semibold tracking-tight">Shopping list</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {remaining.length} left · {checked.length} in basket
+            </p>
+          </div>
+          <button
+            onClick={checkout}
+            className="mt-1 shrink-0 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition active:scale-[0.97]"
+          >
+            Checkout
+          </button>
         </div>
-        <button
-          onClick={checkout}
-          className="mt-1 shrink-0 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition active:scale-[0.97]"
-        >
-          Checkout
-        </button>
-      </div>
+      </PageHeader>
 
       <div className="mt-4 flex gap-2">
         <button
@@ -2134,6 +2160,42 @@ function BottomBar({ current, go }: { current: Screen; go: (s: Screen) => void }
 }
 
 /* ---------- PRIMITIVES ---------- */
+
+/** Soft pastel header tints, one per page. */
+export const PAGE_TINTS = {
+  home: "#e9f1e6",
+  goShopping: "#e4f2e6",
+  addItem: "#e5f4ed",
+  masterList: "#efeaf9",
+  favourites: "#fdf4dc",
+  favouritesByShop: "#fdefe6",
+  manageShops: "#e7effa",
+} as const;
+
+/**
+ * Reusable coloured page header panel. Sits inside a screen wrapper that uses
+ * `px-6 pt-14`, cancelling that padding so the panel spans the full width.
+ */
+function PageHeader({
+  tint: tintColor,
+  children,
+  className = "",
+}: {
+  tint: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`-mx-6 -mt-14 mb-2 rounded-b-[2rem] px-6 pb-7 pt-14 sm:px-8 ${className}`}
+      style={{ backgroundColor: tintColor }}
+    >
+      {children}
+    </div>
+  );
+}
+
+
 
 function BackHeader({ go, to, label }: { go: (s: Screen) => void; to?: Screen; label?: string }) {
   return (
