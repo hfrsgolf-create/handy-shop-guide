@@ -398,31 +398,33 @@ function StoreScreen({
 
   return (
     <div className="px-6 pt-14">
-      <BackHeader go={go} to={{ name: "goShopping" }} label="Shops" />
-      <div className="mt-3 flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <StoreLogo
-            storeId={store.id}
-            storeName={store.name}
-            color={brandColor(store.id, store.name, store.color)}
-            size={54}
-            radius="50%"
-            style={{ background: "#ffffff", boxShadow: "0 1px 2px rgba(16,24,40,0.08)" }}
-          />
-          <div className="min-w-0">
-            <h1 className="truncate text-[28px] font-semibold tracking-tight">{store.name}</h1>
-            <p className="text-sm text-muted-foreground">
-              {remaining.length} left · {checked.length} in basket
-            </p>
+      <PageHeader tint={tint(brandColor(store.id, store.name, store.color), 0.14)}>
+        <BackHeader go={go} to={{ name: "goShopping" }} label="Shops" />
+        <div className="mt-3 flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <StoreLogo
+              storeId={store.id}
+              storeName={store.name}
+              color={brandColor(store.id, store.name, store.color)}
+              size={54}
+              radius="50%"
+              style={{ background: "#ffffff", boxShadow: "0 1px 2px rgba(16,24,40,0.08)" }}
+            />
+            <div className="min-w-0">
+              <h1 className="truncate text-[28px] font-semibold tracking-tight">{store.name}</h1>
+              <p className="text-sm text-muted-foreground">
+                {remaining.length} left · {checked.length} in basket
+              </p>
+            </div>
           </div>
+          <button
+            onClick={checkout}
+            className="mt-1 shrink-0 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition active:scale-[0.97]"
+          >
+            Checkout
+          </button>
         </div>
-        <button
-          onClick={checkout}
-          className="mt-1 shrink-0 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition active:scale-[0.97]"
-        >
-          Checkout
-        </button>
-      </div>
+      </PageHeader>
 
       {dealsCount > 0 && (
         <div className="mt-5 rounded-2xl bg-deal-soft px-5 py-4 text-sm text-deal">
@@ -1506,23 +1508,25 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
 
   return (
     <div className="px-6 pt-14">
-      <div className="flex items-start justify-between gap-3">
-        <BackHeader go={go} />
-        {showUpgradeUi && (
-          <button
-            onClick={() => setShowUpgrade(true)}
-            className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground"
-          >
-            <Sparkles className="h-3.5 w-3.5" /> Upgrade
-          </button>
-        )}
-      </div>
+      <PageHeader tint={PAGE_TINTS.manageShops}>
+        <div className="flex items-start justify-between gap-3">
+          <BackHeader go={go} />
+          {showUpgradeUi && (
+            <button
+              onClick={() => setShowUpgrade(true)}
+              className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground"
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Upgrade
+            </button>
+          )}
+        </div>
 
-      <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Manage shops</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Add your own shops — not just supermarkets. Butchers, bakery, local stores, anything you
-        like.
-      </p>
+        <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Manage shops</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Add your own shops — not just supermarkets. Butchers, bakery, local stores, anything you
+          like.
+        </p>
+      </PageHeader>
 
       <div className="mt-7 space-y-3.5">
         {shops.map((s, i) => (
@@ -1854,21 +1858,23 @@ function MasterListScreen({ go, onEditDeal, onPreviewImage }: { go: (s: Screen) 
 
   return (
     <div className="px-6 pt-14">
-      <BackHeader go={go} />
-      <div className="mt-3 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-[28px] font-semibold tracking-tight">Shopping list</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {remaining.length} left · {checked.length} in basket
-          </p>
+      <PageHeader tint={PAGE_TINTS.masterList}>
+        <BackHeader go={go} />
+        <div className="mt-3 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-[28px] font-semibold tracking-tight">Shopping list</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {remaining.length} left · {checked.length} in basket
+            </p>
+          </div>
+          <button
+            onClick={checkout}
+            className="mt-1 shrink-0 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition active:scale-[0.97]"
+          >
+            Checkout
+          </button>
         </div>
-        <button
-          onClick={checkout}
-          className="mt-1 shrink-0 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition active:scale-[0.97]"
-        >
-          Checkout
-        </button>
-      </div>
+      </PageHeader>
 
       <div className="mt-4 flex gap-2">
         <button
