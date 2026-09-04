@@ -76,6 +76,24 @@
 
   --favorite: oklch(0.72 0.13 75);
   --success: oklch(0.62 0.12 155);
+
+  /* App-wide navy header gradient */
+  --header-navy-top: #102a43;
+  --header-navy-mid: #1f4e79;
+  --header-navy-soft: #cfe0f0;
+}
+
+/* Atmospheric navy → page-background fade used by every page header. */
+@utility page-header-navy {
+  background-image: linear-gradient(
+    to bottom,
+    var(--header-navy-top) 0%,
+    var(--header-navy-top) 22%,
+    var(--header-navy-mid) 55%,
+    var(--header-navy-soft) 82%,
+    color-mix(in srgb, var(--header-navy-soft) 25%, var(--background)) 93%,
+    var(--background) 100%
+  );
 }
 
 @layer base {

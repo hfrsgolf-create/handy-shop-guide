@@ -233,10 +233,10 @@ function HomeScreen({ go }: { go: (s: Screen) => void }) {
   ];
 
   return (
-    <div className="px-6 pt-16">
-      <PageHeader tint={PAGE_TINTS.home} className="-mt-16 pt-16">
+    <div className="px-6 pt-14">
+      <PageHeader>
         <header>
-          <p className="text-sm font-medium text-[#2f6b3f]">Hi {firstName} <span className="ml-0.5">👋</span></p>
+          <p className="text-sm font-medium text-primary-foreground/85">Hi {firstName} <span className="ml-0.5">👋</span></p>
           <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-tight">
             What do you want to do today?
           </h1>
@@ -292,7 +292,7 @@ function GoShoppingScreen({ go }: { go: (s: Screen) => void }) {
 
   return (
     <div className="px-6 pt-14">
-      <PageHeader tint={PAGE_TINTS.goShopping}>
+      <PageHeader>
         <BackHeader go={go} />
         <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Where are you shopping?</h1>
         <p className="mt-1 text-sm text-muted-foreground">Tap a shop to see what to buy there.</p>
@@ -398,7 +398,7 @@ function StoreScreen({
 
   return (
     <div className="px-6 pt-14">
-      <PageHeader tint={tint(brandColor(store.id, store.name, store.color), 0.14)}>
+      <PageHeader brand tint={tint(brandColor(store.id, store.name, store.color), 0.14)}>
         <BackHeader go={go} to={{ name: "goShopping" }} label="Shops" />
         <div className="mt-3 flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
@@ -552,7 +552,7 @@ function AddItemScreen({ go }: { go: (s: Screen) => void }) {
 
   return (
     <div className="px-6 pt-14">
-      <PageHeader tint={PAGE_TINTS.addItem}>
+      <PageHeader>
         <BackHeader go={go} />
         <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Add to Shopping List</h1>
         <p className="mt-1 text-sm text-muted-foreground">Search — tap any result to add instantly.</p>
@@ -733,7 +733,7 @@ function FavouritesScreen({
 
   return (
     <div className="px-6 pt-14">
-      <PageHeader tint={PAGE_TINTS.favourites}>
+      <PageHeader>
         <BackHeader go={go} />
         <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Add favourites</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -969,7 +969,7 @@ function SelectStoreScreen({
 
   return (
     <div className="px-6 pt-14">
-      <PageHeader tint={PAGE_TINTS.favourites}>
+      <PageHeader>
         <BackHeader go={go} to={{ name: "favourites" }} label="Add favourites" />
         <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Select store</h1>
         <p className="mt-1 text-sm text-muted-foreground">Tap a store to use it for this favourite.</p>
@@ -1074,7 +1074,7 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
 
   return (
     <div className="px-6 pt-14">
-      <PageHeader tint={PAGE_TINTS.favouritesByShop}>
+      <PageHeader>
         <BackHeader go={go} />
         <h1 className="mt-3 text-[28px] font-semibold tracking-tight">View &amp; manage favourites</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -1364,13 +1364,7 @@ function StoreFavouritesScreen({ storeId, go }: { storeId: StoreId; go: (s: Scre
 
   return (
     <div className="px-6 pt-14">
-      <PageHeader
-        tint={
-          storeId === "any"
-            ? PAGE_TINTS.favouritesByShop
-            : tint(brandColor(storeId, storeName(storeId)), 0.14)
-        }
-      >
+      <PageHeader>
         <BackHeader go={go} to={{ name: "favouritesByShop" }} label="Favourites" />
         <h1 className="mt-3 text-[28px] font-semibold tracking-tight">{title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -1508,7 +1502,7 @@ function ManageShopsScreen({ go }: { go: (s: Screen) => void }) {
 
   return (
     <div className="px-6 pt-14">
-      <PageHeader tint={PAGE_TINTS.manageShops}>
+      <PageHeader>
         <div className="flex items-start justify-between gap-3">
           <BackHeader go={go} />
           {showUpgradeUi && (
@@ -1858,7 +1852,7 @@ function MasterListScreen({ go, onEditDeal, onPreviewImage }: { go: (s: Screen) 
 
   return (
     <div className="px-6 pt-14">
-      <PageHeader tint={PAGE_TINTS.masterList}>
+      <PageHeader>
         <BackHeader go={go} />
         <div className="mt-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -2173,22 +2167,35 @@ export const PAGE_TINTS = {
 } as const;
 
 /**
- * Reusable coloured page header panel. Sits inside a screen wrapper that uses
- * `px-6 pt-14`, cancelling that padding so the panel spans the full width.
+ * Reusable page header. Default treatment is the app-wide navy → white
+ * atmospheric gradient (no card edge). Shop-branded screens pass
+ * `brand` with a `tint` colour to keep their existing brand identity.
  */
 function PageHeader({
   tint: tintColor,
+  brand = false,
   children,
   className = "",
 }: {
-  tint: string;
-  children: React.ReactNode;
+  tint?: string;
+  brand?: boolean;
+  children?: React.ReactNode;
   className?: string;
 }) {
+  if (brand && tintColor) {
+    return (
+      <div
+        className={`-mx-6 -mt-14 mb-2 rounded-b-[2rem] px-6 pb-7 pt-14 sm:px-8 ${className}`}
+        style={{ backgroundColor: tintColor }}
+      >
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div
-      className={`-mx-6 -mt-14 mb-2 rounded-b-[2rem] px-6 pb-7 pt-14 sm:px-8 ${className}`}
-      style={{ backgroundColor: tintColor }}
+      className={`page-header-navy -mx-6 -mt-14 mb-2 px-6 pb-16 pt-[max(4rem,calc(env(safe-area-inset-top)+3.5rem))] text-primary-foreground sm:px-8 [&_h1]:text-primary-foreground [&_p]:text-primary-foreground/80 [&_button]:text-primary-foreground/85 ${className}`}
     >
       {children}
     </div>
