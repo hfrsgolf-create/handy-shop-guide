@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X, Camera, ScanLine, Loader2, Check } from "lucide-react";
 import { ProductImageBox } from "@/components/ProductImageBox";
+import { useBackClose } from "@/lib/back-nav";
 import {
   getBarcodeDetector,
   isScanSupported,
@@ -22,6 +23,7 @@ export function ScanProductSheet({
   onClose: () => void;
   onUse: (r: ScanResult) => void;
 }) {
+  useBackClose(true, onClose);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);

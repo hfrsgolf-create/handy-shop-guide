@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Camera, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { fileToSmallDataUrl } from "@/lib/barcode-scan";
+import { useBackClose } from "@/lib/back-nav";
 
 /**
  * Compact square (1:1) product image container, ~45% of the container width so
@@ -23,6 +24,7 @@ export function ProductImageBox({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [busy, setBusy] = useState(false);
   const [zoom, setZoom] = useState(false);
+  useBackClose(zoom, () => setZoom(false));
 
   useEffect(() => {
     if (!zoom) return;

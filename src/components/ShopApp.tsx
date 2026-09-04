@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useScreenStack, useBackClose } from "@/lib/back-nav";
 import { Toaster, toast } from "sonner";
 
 import {
@@ -63,7 +64,7 @@ export function ShopApp() {
   const shopsReady = useShops((s) => s.ready);
   const shopsList = useShops((s) => s.shops);
   const ensureShopDefaults = useShops((s) => s.ensureDefaults);
-  const [screen, setScreen] = useState<Screen>({ name: "home" });
+  const { screen, push: pushScreen, reset: resetScreen } = useScreenStack<Screen>({ name: "home" });
   const [favDraft, setFavDraft] = useState<FavDraft>(EMPTY_FAV_DRAFT);
   const [editingDealFor, setEditingDealFor] = useState<Item | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -97,7 +98,11 @@ export function ShopApp() {
     );
   }
 
-  const go = (s: Screen) => setScreen(s);
+  const go = (s: Screen) => {
+    if (s.name === screen.name && JSON.stringify(s) === JSON.stringify(screen)) return;
+    if (s.name === "home") resetScreen(s);
+    else pushScreen(s);
+  };
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-background text-foreground">
@@ -1449,6 +1454,7 @@ function OnboardingRow({ icon, title, body }: { icon: string; title: string; bod
 }
 
 function ModalShell({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  useBackClose(true, onClose);
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
@@ -2216,6 +2222,7 @@ function BackHeader({ go, to, label }: { go: (s: Screen) => void; to?: Screen; l
 }
 
 function Sheet({ onClose, title, children }: { onClose: () => void; title: string; children: React.ReactNode }) {
+  useBackClose(true, onClose);
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-foreground/30 backdrop-blur-sm" onClick={onClose}>
       <div
@@ -2275,6 +2282,7 @@ function ChoiceChip({
 }
 
 function Lightbox({ src, onClose }: { src: string | null; onClose: () => void }) {
+  useBackClose(!!src, onClose);
   if (!src) return null;
   return (
     <div
