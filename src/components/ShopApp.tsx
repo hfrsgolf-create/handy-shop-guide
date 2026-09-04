@@ -63,7 +63,7 @@ export function ShopApp() {
   const shopsReady = useShops((s) => s.ready);
   const shopsList = useShops((s) => s.shops);
   const ensureShopDefaults = useShops((s) => s.ensureDefaults);
-  const [screen, setScreen] = useState<Screen>({ name: "home" });
+  const { screen, push: pushScreen, reset: resetScreen } = useScreenStack<Screen>({ name: "home" });
   const [favDraft, setFavDraft] = useState<FavDraft>(EMPTY_FAV_DRAFT);
   const [editingDealFor, setEditingDealFor] = useState<Item | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
