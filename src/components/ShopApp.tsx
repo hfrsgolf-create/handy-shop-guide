@@ -2221,6 +2221,7 @@ function BackHeader({ go, to, label }: { go: (s: Screen) => void; to?: Screen; l
 }
 
 function Sheet({ onClose, title, children }: { onClose: () => void; title: string; children: React.ReactNode }) {
+  useBackClose(true, onClose);
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-foreground/30 backdrop-blur-sm" onClick={onClose}>
       <div
