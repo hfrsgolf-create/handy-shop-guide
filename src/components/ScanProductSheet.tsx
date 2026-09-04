@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X, Camera, ScanLine, Loader2, Check } from "lucide-react";
 import { ProductImageBox } from "@/components/ProductImageBox";
+import { useBackClose } from "@/lib/back-nav";
 import {
   getBarcodeDetector,
   isScanSupported,
