@@ -2281,6 +2281,7 @@ function ChoiceChip({
 }
 
 function Lightbox({ src, onClose }: { src: string | null; onClose: () => void }) {
+  useBackClose(!!src, onClose);
   if (!src) return null;
   return (
     <div
