@@ -22,6 +22,7 @@ export function ScanProductSheet({
   onClose: () => void;
   onUse: (r: ScanResult) => void;
 }) {
+  useBackClose(true, onClose);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);
