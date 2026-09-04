@@ -2173,22 +2173,35 @@ export const PAGE_TINTS = {
 } as const;
 
 /**
- * Reusable coloured page header panel. Sits inside a screen wrapper that uses
- * `px-6 pt-14`, cancelling that padding so the panel spans the full width.
+ * Reusable page header. Default treatment is the app-wide navy → white
+ * atmospheric gradient (no card edge). Shop-branded screens pass
+ * `brand` with a `tint` colour to keep their existing brand identity.
  */
 function PageHeader({
   tint: tintColor,
+  brand = false,
   children,
   className = "",
 }: {
-  tint: string;
-  children: React.ReactNode;
+  tint?: string;
+  brand?: boolean;
+  children?: React.ReactNode;
   className?: string;
 }) {
+  if (brand && tintColor) {
+    return (
+      <div
+        className={`-mx-6 -mt-14 mb-2 rounded-b-[2rem] px-6 pb-7 pt-14 sm:px-8 ${className}`}
+        style={{ backgroundColor: tintColor }}
+      >
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div
-      className={`-mx-6 -mt-14 mb-2 rounded-b-[2rem] px-6 pb-7 pt-14 sm:px-8 ${className}`}
-      style={{ backgroundColor: tintColor }}
+      className={`page-header-navy -mx-6 -mt-14 mb-2 px-6 pb-16 pt-[max(4rem,calc(env(safe-area-inset-top)+3.5rem))] text-primary-foreground sm:px-8 [&_h1]:text-primary-foreground [&_p]:text-primary-foreground/80 [&_button]:text-primary-foreground/85 ${className}`}
     >
       {children}
     </div>
