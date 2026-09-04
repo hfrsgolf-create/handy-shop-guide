@@ -97,7 +97,11 @@ export function ShopApp() {
     );
   }
 
-  const go = (s: Screen) => setScreen(s);
+  const go = (s: Screen) => {
+    if (s.name === screen.name && JSON.stringify(s) === JSON.stringify(screen)) return;
+    if (s.name === "home") resetScreen(s);
+    else pushScreen(s);
+  };
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-background text-foreground">
