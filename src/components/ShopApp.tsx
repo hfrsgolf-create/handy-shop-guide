@@ -1454,6 +1454,7 @@ function OnboardingRow({ icon, title, body }: { icon: string; title: string; bod
 }
 
 function ModalShell({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  useBackClose(true, onClose);
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
