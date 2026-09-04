@@ -24,6 +24,7 @@ export function ProductImageBox({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [busy, setBusy] = useState(false);
   const [zoom, setZoom] = useState(false);
+  useBackClose(zoom, () => setZoom(false));
 
   useEffect(() => {
     if (!zoom) return;
