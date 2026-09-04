@@ -233,10 +233,10 @@ function HomeScreen({ go }: { go: (s: Screen) => void }) {
   ];
 
   return (
-    <div className="px-6 pt-16">
-      <PageHeader tint={PAGE_TINTS.home} className="-mt-16 pt-16">
+    <div className="px-6 pt-14">
+      <PageHeader>
         <header>
-          <p className="text-sm font-medium text-[#2f6b3f]">Hi {firstName} <span className="ml-0.5">👋</span></p>
+          <p className="text-sm font-medium text-primary-foreground/85">Hi {firstName} <span className="ml-0.5">👋</span></p>
           <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-tight">
             What do you want to do today?
           </h1>
