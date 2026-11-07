@@ -1032,9 +1032,12 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
   const shops = useGuaranteedShops();
   const items = useShop((s) => s.items);
   const addFavouriteToList = useShop((s) => s.addFavouriteToList);
+  const addFavourite = useShop((s) => s.addFavourite);
   const favs = favouriteItems(items);
   const [editing, setEditing] = useState<Item | null>(null);
   const [justAdded, setJustAdded] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   // Expanded sections, persisted per store. Unknown/new stores start COLLAPSED.
   const [expanded, setExpanded] = useState<string[]>([]);
