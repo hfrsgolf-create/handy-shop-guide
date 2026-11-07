@@ -1156,6 +1156,32 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
         <p className="mt-1 text-sm text-muted-foreground">
           Tap <span className="font-medium text-foreground">+</span> to add to your shopping list, or tap an item to edit it.
         </p>
+        <div className="mt-4 flex gap-2.5">
+          <button
+            type="button"
+            onClick={exportCsv}
+            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-card px-4 py-2.5 text-[13px] font-semibold text-foreground shadow-sm transition active:scale-95"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </button>
+          <button
+            type="button"
+            onClick={() => importInputRef.current?.click()}
+            disabled={importing}
+            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-card px-4 py-2.5 text-[13px] font-semibold text-foreground shadow-sm transition active:scale-95 disabled:opacity-60"
+          >
+            <Upload className="h-4 w-4" />
+            {importing ? "Importing…" : "Import CSV"}
+          </button>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={onImportFile}
+          />
+        </div>
       </PageHeader>
 
       <div className="mt-7 pb-10">
