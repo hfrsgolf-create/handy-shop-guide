@@ -21,6 +21,8 @@ import {
   ArrowDown,
   Trash2,
   ScanLine,
+  Download,
+  Upload,
 } from "lucide-react";
 import {
   useShop,
@@ -39,6 +41,7 @@ import { StoreLogo, StoreTab, StoreCard, brandColor, tint } from "@/lib/store-lo
 import { ITEM_CATALOGUE } from "@/lib/item-catalogue";
 import { ScanProductSheet } from "@/components/ScanProductSheet";
 import { ProductImageBox } from "@/components/ProductImageBox";
+import { favouritesToCsv, csvToFavourites } from "@/lib/favourites-csv";
 
 type Screen =
   | { name: "home" }
