@@ -1160,7 +1160,7 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
           <button
             type="button"
             onClick={exportCsv}
-            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-card px-4 py-2.5 text-[13px] font-semibold text-foreground shadow-sm transition active:scale-95"
+            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-card px-4 py-2.5 text-[13px] font-semibold text-foreground! shadow-sm transition active:scale-95"
           >
             <Download className="h-4 w-4" />
             Export CSV
@@ -1169,7 +1169,7 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
             type="button"
             onClick={() => importInputRef.current?.click()}
             disabled={importing}
-            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-card px-4 py-2.5 text-[13px] font-semibold text-foreground shadow-sm transition active:scale-95 disabled:opacity-60"
+            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-card px-4 py-2.5 text-[13px] font-semibold text-foreground! shadow-sm transition active:scale-95 disabled:opacity-60"
           >
             <Upload className="h-4 w-4" />
             {importing ? "Importing…" : "Import CSV"}
