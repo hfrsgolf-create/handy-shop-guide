@@ -1083,6 +1083,71 @@ function FavouritesByShopScreen({ go }: { go: (s: Screen) => void }) {
     setTimeout(() => setJustAdded((v) => (v === f.id ? null : v)), 900);
   };
 
+  const exportCsv = () => {
+    if (favs.length === 0) {
+      toast("No favourites to export yet");
+      return;
+    }
+    const csv = favouritesToCsv(favs, (id) => shops.find((sh) => sh.id === id)?.name ?? "Any Store");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "favourites.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30_000);
+    toast.success(`Exported ${favs.length} favourite${favs.length === 1 ? "" : "s"}`);
+  };
+
+  const onImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const parsed = csvToFavourites(text);
+      if (parsed.length === 0) {
+        toast.error("No favourites found in that file");
+        return;
+      }
+      const existing = new Set(
+        favs.map((f) => `${f.name.toLowerCase()}|${f.preferredStore}`),
+      );
+      let added = 0;
+      let skipped = 0;
+      for (const row of parsed) {
+        const storeName = row.storeName.trim().toLowerCase();
+        const store: StoreId =
+          storeName === "" || storeName === "any store" || storeName === "any"
+            ? "any"
+            : (shops.find((sh) => sh.name.trim().toLowerCase() === storeName)?.id ?? "any");
+        const key = `${row.name.toLowerCase()}|${store}`;
+        if (existing.has(key)) {
+          skipped++;
+          continue;
+        }
+        existing.add(key);
+        await addFavourite({
+          name: row.name,
+          preferredStore: store,
+          isLocked: row.locked && store !== "any",
+          notes: row.notes || undefined,
+        });
+        added++;
+      }
+      if (added > 0) toast.success(`Imported ${added} favourite${added === 1 ? "" : "s"}`);
+      if (skipped > 0) toast(`${skipped} already existed — skipped`);
+    } catch (err) {
+      console.error("Favourites import failed", err);
+      toast.error("Couldn't import that file. Please check it's a favourites CSV.");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <div className="px-6 pt-14">
       <PageHeader>
